@@ -29,7 +29,7 @@
       <button @click="currentTab = 'catalog'" :class="{'bg-white shadow-sm font-bold text-amber-600': currentTab === 'catalog'}" class="flex-1 py-2 text-sm rounded-lg transition-all">
         <i class="fa-solid fa-book-open"></i> 菜單型錄
       </button>
-      <button @click="currentTab = 'categories'" :class="{'bg-white shadow-sm font-bold text-amber-600': currentTab === 'categories'}" class="flex-1 py-2 text-sm rounded-lg transition-all">
+      <button @click="currentTab = 'settings'" :class="{'bg-white shadow-sm font-bold text-amber-600': currentTab === 'settings'}" class="flex-1 py-2 text-sm rounded-lg transition-all">
         <i class="fa-solid fa-gear"></i> 設定
       </button>
     </div>
@@ -88,24 +88,9 @@
         <div class="text-sm text-slate-600 space-y-2 bg-white/70 p-3 rounded-xl text-left mb-4">
           <p v-if="pickedRestaurant.phone"><i class="fa-solid fa-phone text-amber-500 w-5"></i> 電話：{{ pickedRestaurant.phone }}</p>
           <p v-if="pickedRestaurant.price"><i class="fa-solid fa-coins text-amber-500 w-5"></i> 均消/價格：NT$ {{ pickedRestaurant.price }}</p>
-          <p v-if="pickedRestaurant.address"><i class="fa-solid fa-location-dot text-amber-500 w-5"></i> 地址：{{ pickedRestaurant.address }}</p>
-          <p v-if="pickedRestaurant.menu"><i class="fa-solid fa-utensils text-amber-500 w-5"></i> 菜單備註：{{ pickedRestaurant.menu }}</p>
-          
-          <div v-if="pickedRestaurant.image" class="mt-2">
-            <p class="text-xs font-bold text-slate-500 mb-1"><i class="fa-solid fa-image text-amber-500 w-5"></i> 菜單照片：</p>
-            <img :src="pickedRestaurant.image" @click="previewImage = pickedRestaurant.image" class="w-full h-32 object-cover rounded-lg border cursor-pointer hover:opacity-90">
-          </div>
         </div>
 
         <div class="space-y-2">
-          <a 
-            v-if="pickedRestaurant.mapUrl" 
-            :href="pickedRestaurant.mapUrl" 
-            target="_blank" 
-            class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
-          >
-            <i class="fa-solid fa-map-location-dot"></i> 開啟 Google 地圖導航
-          </a>
           <button @click="pickRandom(selectedFilterCategories.length > 0)" class="text-xs text-amber-700 underline hover:text-amber-900 block mx-auto pt-1">
             不喜歡？再抽一次
           </button>
@@ -198,7 +183,7 @@
           </div>
         </div>
 
-        <!-- 統計與累積總額 (直接可複製成 LINE 文字) -->
+        <!-- 統計與累積總額 -->
         <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-xs space-y-3">
           <div class="font-bold text-indigo-900 border-b border-indigo-200 pb-1 flex justify-between">
             <span><i class="fa-solid fa-calculator"></i> 全團總計數量與匯總：</span>
@@ -250,13 +235,8 @@
           <div class="text-xs text-slate-500 space-y-1.5 mt-2 border-t pt-2 border-slate-50">
             <p v-if="res.phone"><span class="font-semibold text-slate-700">電話：</span>{{ res.phone }}</p>
             <p v-if="res.price"><span class="font-semibold text-slate-700">價格：</span>NT$ {{ res.price }}</p>
-            <p v-if="res.address"><span class="font-semibold text-slate-700">地址：</span>{{ res.address }}</p>
-            <p v-if="res.menu"><span class="font-semibold text-slate-700">菜單/備註：</span>{{ res.menu }}</p>
             
-            <div class="flex items-center justify-between pt-2">
-              <a v-if="res.mapUrl" :href="res.mapUrl" target="_blank" class="inline-flex items-center gap-1 text-emerald-600 text-xs font-bold hover:underline">
-                <i class="fa-solid fa-map-location-dot"></i> 打開 Google 地圖
-              </a>
+            <div class="flex items-center justify-end pt-2">
               <button @click="startOrderFromCatalog(res)" class="text-amber-600 font-bold text-xs hover:underline flex items-center gap-1">
                 <i class="fa-solid fa-cart-plus"></i> 直接開團點餐
               </button>
@@ -266,8 +246,8 @@
       </div>
     </section>
 
-    <!-- 3. 設定與 API 連接 (Categories/Settings) -->
-    <section v-if="currentTab === 'categories'" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+    <!-- 3. 設定與 API 連接 (Settings) -->
+    <section v-if="currentTab === 'settings'" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
       <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
         <h3 class="font-bold text-amber-800 text-xs mb-1"><i class="fa-solid fa-cloud"></i> Google 試算表雲端同步網址 (Web App URL)</h3>
         <input 
@@ -310,14 +290,6 @@
         </div>
 
         <div class="space-y-3 text-xs">
-          <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-2">
-            <label class="block font-bold text-amber-800"><i class="fa-solid fa-bolt"></i> 貼上地圖分享文字或網址</label>
-            <div class="flex gap-1.5">
-              <textarea v-model="mapInput" rows="2" placeholder="貼上地圖分享文字 (如: 家味小館 https://maps.app.goo.gl/...)" class="flex-1 bg-white border rounded-lg p-2 text-xs focus:outline-none resize-none"></textarea>
-              <button @click="parseMapData" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg text-xs whitespace-nowrap">解析帶入</button>
-            </div>
-          </div>
-
           <div>
             <label class="block font-bold text-slate-600 mb-1">餐廳名稱 *</label>
             <input v-model="newRes.name" type="text" placeholder="例：家味小館" class="w-full bg-slate-50 border rounded-xl p-2.5">
@@ -346,7 +318,6 @@
         const showAddModal = ref(false);
         const isLoading = ref(false);
 
-        // 您在 Google Apps Script 取得的網址可以預設貼在下面：
         const scriptUrl = ref(localStorage.getItem('eat_script_url') || '');
 
         const categories = ref(['台式小吃', '便當', '平價', '速食', '滷味', '飲料']);
@@ -359,8 +330,7 @@
         const currentOrderRestaurant = ref(null);
 
         const newCategoryInput = ref('');
-        const mapInput = ref('');
-        const newRes = ref({ name: '', phone: '', tags: [], price: '', rating: '', address: '', menu: '', mapUrl: '' });
+        const newRes = ref({ name: '', phone: '', tags: [], price: '', rating: '' });
 
         const orderItems = ref([]);
         const orderForm = ref({ userName: '柏成', itemName: '', count: 1, price: null, note: '' });
@@ -373,7 +343,41 @@
           localStorage.setItem('eat_script_url', newVal);
         });
 
-        // 從雲端 Google 試算表抓取最新資料
+        const toggleFilterCategory = (cat) => {
+          const idx = selectedFilterCategories.value.indexOf(cat);
+          if (idx > -1) selectedFilterCategories.value.splice(idx, 1);
+          else selectedFilterCategories.value.push(cat);
+        };
+
+        const addCategory = () => {
+          if (newCategoryInput.value.trim() && !categories.value.includes(newCategoryInput.value.trim())) {
+            categories.value.push(newCategoryInput.value.trim());
+            newCategoryInput.value = '';
+          }
+        };
+
+        const removeCategory = (cat) => {
+          categories.value = categories.value.filter(c => c !== cat);
+        };
+
+        const saveRestaurant = () => {
+          if (!newRes.value.name.trim()) return alert('請輸入餐廳名稱！');
+          restaurants.value.push({
+            id: Date.now(),
+            name: newRes.value.name,
+            phone: newRes.value.phone,
+            tags: ['自訂'],
+            price: '100',
+            rating: '4.0'
+          });
+          newRes.value = { name: '', phone: '', tags: [], price: '', rating: '' };
+          showAddModal.value = false;
+        };
+
+        const deleteRestaurant = (id) => {
+          restaurants.value = restaurants.value.filter(r => r.id !== id);
+        };
+
         const fetchCloudOrders = async () => {
           if (!scriptUrl.value) return;
           isLoading.value = true;
@@ -388,7 +392,6 @@
           }
         };
 
-        // 傳送點餐資料至雲端 Google 試算表
         const addOrderItem = async () => {
           if (!orderForm.value.userName.trim()) return alert('請輸入人物名稱/代號！');
           if (!orderForm.value.itemName.trim()) return alert('請輸入餐點品項！');
@@ -411,14 +414,13 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
               });
-              setTimeout(fetchCloudOrders, 1000); // 延遲刷新取得最新清單
+              setTimeout(fetchCloudOrders, 1000);
             } catch (e) {
               alert('上傳失敗');
             } finally {
               isLoading.value = false;
             }
           } else {
-            // 無雲端時備用本地模式
             orderItems.value.push(payload);
           }
 
@@ -444,7 +446,6 @@
           }
         };
 
-        // 一鍵複製成適合在 LINE 群組發送的格式
         const copyLineFormatText = () => {
           let text = `【${currentOrderRestaurant.value?.name || '團購點餐'} 明細】\n\n`;
           orderItems.value.forEach(item => {
@@ -502,7 +503,8 @@
         return {
           currentTab, showAddModal, isLoading, scriptUrl, categories, restaurants,
           selectedFilterCategories, pickedRestaurant, currentOrderRestaurant, newCategoryInput,
-          mapInput, newRes, orderItems, orderForm, totalAmount, totalItemCount, itemSummary,
+          newRes, orderItems, orderForm, totalAmount, totalItemCount, itemSummary,
+          toggleFilterCategory, addCategory, removeCategory, saveRestaurant, deleteRestaurant,
           fetchCloudOrders, addOrderItem, clearCloudOrders, copyLineFormatText,
           startOrderSection, startOrderFromCatalog, pickRandom
         };
