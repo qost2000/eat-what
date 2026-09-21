@@ -37,7 +37,7 @@
     <!-- 1. 亂數決策 & 點餐 (Picker) -->
     <section v-if="currentTab === 'picker'" class="space-y-4">
       <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">步驟 1：依標題分類過濾（可複選）</label>
+        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">依標題分類過濾（可複選）</label>
         <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
           <button 
             v-for="cat in categories" 
@@ -65,7 +65,7 @@
           class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-4 px-3 rounded-2xl shadow-lg shadow-indigo-200 transition-all flex flex-col items-center justify-center gap-1"
         >
           <i class="fa-solid fa-shuffle text-xl"></i>
-          <span>直接隨機大盲盒</span>
+          <span>隨機大盲盒</span>
         </button>
       </div>
 
@@ -85,26 +85,29 @@
           </span>
         </div>
 
-        <div class="text-sm text-slate-600 space-y-2 bg-white/70 p-3 rounded-xl text-left mb-4">
+        <div class="text-xs text-slate-600 space-y-2 bg-white/70 p-3 rounded-xl text-left mb-4">
           <p v-if="pickedRestaurant.phone"><i class="fa-solid fa-phone text-amber-500 w-5"></i> 電話：{{ pickedRestaurant.phone }}</p>
-          <p v-if="pickedRestaurant.price"><i class="fa-solid fa-coins text-amber-500 w-5"></i> 均消/價格：NT$ {{ pickedRestaurant.price }}</p>
+          <p v-if="pickedRestaurant.price"><i class="fa-solid fa-coins text-amber-500 w-5"></i> 價位/均消：NT$ {{ pickedRestaurant.price }}</p>
+          <p v-if="pickedRestaurant.address"><i class="fa-solid fa-location-dot text-amber-500 w-5"></i> 地址：{{ pickedRestaurant.address }}</p>
+          <p v-if="pickedRestaurant.menu"><i class="fa-solid fa-utensils text-amber-500 w-5"></i> 備註：{{ pickedRestaurant.menu }}</p>
+          <div v-if="pickedRestaurant.image" class="mt-2">
+            <img :src="pickedRestaurant.image" class="w-full h-32 object-cover rounded-lg border">
+          </div>
         </div>
 
-        <div class="space-y-2">
-          <button @click="pickRandom(selectedFilterCategories.length > 0)" class="text-xs text-amber-700 underline hover:text-amber-900 block mx-auto pt-1">
-            不喜歡？再抽一次
-          </button>
-        </div>
+        <button @click="pickRandom(selectedFilterCategories.length > 0)" class="text-xs text-amber-700 underline hover:text-amber-900 block mx-auto pt-1 mb-3">
+          不喜歡？再抽一次
+        </button>
 
         <!-- 開啟團購點餐按鈕 -->
-        <div class="mt-4 pt-3 border-t border-amber-200">
+        <div class="pt-3 border-t border-amber-200">
           <button @click="startOrderSection" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
             <i class="fa-solid fa-cart-plus"></i> 大家一起線上同步點餐 (開團)
           </button>
         </div>
       </div>
 
-      <!-- 雲端跨手機同步點餐區 -->
+      <!-- 雲端同步點餐區 -->
       <div v-if="currentOrderRestaurant" class="bg-white rounded-2xl p-5 shadow-lg border border-slate-200 space-y-4 mt-6">
         <div class="flex justify-between items-center border-b pb-3">
           <div>
@@ -113,11 +116,9 @@
             </span>
             <h3 class="text-xl font-bold text-slate-800 mt-1">{{ currentOrderRestaurant.name }}</h3>
           </div>
-          <div class="flex gap-2">
-            <button @click="fetchCloudOrders" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">
-              <i class="fa-solid fa-rotate" :class="{'fa-spin': isLoading}"></i> 刷新
-            </button>
-          </div>
+          <button @click="fetchCloudOrders" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">
+            <i class="fa-solid fa-rotate" :class="{'fa-spin': isLoading}"></i> 刷新
+          </button>
         </div>
 
         <!-- 新增個人餐點表單 -->
@@ -133,22 +134,22 @@
             </div>
             <div>
               <label class="block font-bold text-slate-500 mb-1">餐點品項 *</label>
-              <input v-model="orderForm.itemName" type="text" placeholder="例：炸雞腿" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+              <input v-model="orderForm.itemName" type="text" placeholder="例：雞腿飯" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-2 text-xs">
             <div>
               <label class="block font-bold text-slate-500 mb-1">數量</label>
-              <input v-model.number="orderForm.count" type="number" min="1" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+              <input v-model.number="orderForm.count" type="number" min="1" class="w-full bg-white border rounded-lg p-2">
             </div>
             <div>
-              <label class="block font-bold text-slate-500 mb-1">單價 (元)</label>
-              <input v-model.number="orderForm.price" type="number" min="0" placeholder="50" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+              <label class="block font-bold text-slate-500 mb-1">單價 ($)</label>
+              <input v-model.number="orderForm.price" type="number" min="0" placeholder="100" class="w-full bg-white border rounded-lg p-2">
             </div>
             <div>
-              <label class="block font-bold text-slate-500 mb-1">備註 (辣度/冰塊)</label>
-              <input v-model="orderForm.note" type="text" placeholder="例：辣" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+              <label class="block font-bold text-slate-500 mb-1">備註</label>
+              <input v-model="orderForm.note" type="text" placeholder="例：不加蔥" class="w-full bg-white border rounded-lg p-2">
             </div>
           </div>
 
@@ -157,61 +158,57 @@
           </button>
         </div>
 
-        <!-- 點餐明細清單 -->
+        <!-- 明細清單與統計 -->
         <div>
           <div class="flex justify-between items-center mb-2">
             <h4 class="font-bold text-xs text-slate-700">所有人點餐明細：</h4>
             <button @click="clearCloudOrders" class="text-[10px] text-rose-500 hover:underline">清空全團資料</button>
           </div>
-          
+
           <div v-if="orderItems.length === 0" class="text-center py-6 text-xs text-slate-400 bg-slate-50 rounded-xl">
             目前還沒有人點餐，快填寫上方表單點餐！
           </div>
 
-          <div class="space-y-2">
+          <div class="space-y-2 mb-4">
             <div v-for="(item, index) in orderItems" :key="index" class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
               <div>
                 <span class="font-bold text-amber-700">{{ item.userName }}</span> - 
                 <span class="font-bold text-slate-800">{{ item.itemName }}</span> * {{ item.count }}
                 <span v-if="item.note" class="text-slate-500">({{ item.note }})</span>
-                <div class="text-[10px] text-slate-400">小計: NT$ {{ (item.price || 0) * item.count }} (單價 ${{ item.price || 0 }})</div>
+                <div class="text-[10px] text-slate-400">小計: NT$ {{ (item.price || 0) * item.count }}</div>
               </div>
               <div class="text-right font-bold text-slate-700">
                 NT$ {{ (item.price || 0) * item.count }}
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 統計與累積總額 -->
-        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-xs space-y-3">
-          <div class="font-bold text-indigo-900 border-b border-indigo-200 pb-1 flex justify-between">
-            <span><i class="fa-solid fa-calculator"></i> 全團總計數量與匯總：</span>
-            <span>共 {{ totalItemCount }} 份餐點</span>
+          <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-xs space-y-3">
+            <div class="font-bold text-indigo-900 border-b border-indigo-200 pb-1 flex justify-between">
+              <span>全團統計：</span>
+              <span>共 {{ totalItemCount }} 份餐點</span>
+            </div>
+            <ul class="space-y-1 text-indigo-800">
+              <li v-for="(stat, name) in itemSummary" :key="name" class="flex justify-between">
+                <span>• {{ stat.count }}x {{ name }}</span>
+                <span class="text-indigo-600 font-semibold">NT$ {{ stat.totalPrice }}</span>
+              </li>
+            </ul>
+            <div class="border-t border-indigo-200 pt-2 flex justify-between items-center text-sm font-black text-indigo-950">
+              <span>累積總金額：</span>
+              <span class="text-lg text-amber-600">NT$ {{ totalAmount }}</span>
+            </div>
+            <button @click="copyLineFormatText" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs shadow flex items-center justify-center gap-1">
+              <i class="fa-solid fa-copy"></i> 一鍵複製 LINE 點餐懶人包
+            </button>
           </div>
-          
-          <ul class="space-y-1 text-indigo-800">
-            <li v-for="(stat, name) in itemSummary" :key="name" class="flex justify-between">
-              <span>• {{ stat.count }}x {{ name }}</span>
-              <span class="text-indigo-600 font-semibold">NT$ {{ stat.totalPrice }}</span>
-            </li>
-          </ul>
-
-          <div class="border-t border-indigo-200 pt-2 flex justify-between items-center text-sm font-black text-indigo-950">
-            <span>累積總金額：</span>
-            <span class="text-lg text-amber-600">NT$ {{ totalAmount }}</span>
-          </div>
-
-          <button @click="copyLineFormatText" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs shadow flex items-center justify-center gap-1">
-            <i class="fa-solid fa-copy"></i> 一鍵複製 LINE 點餐懶人包
-          </button>
         </div>
       </div>
     </section>
 
     <!-- 2. 菜單型錄 (Catalog) -->
     <section v-if="currentTab === 'catalog'" class="space-y-4">
-      <button @click="showAddModal = true" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md">
+      <button @click="openAddModal" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md">
         <i class="fa-solid fa-plus"></i> 新增餐廳 / 貼上 Google 地圖
       </button>
 
@@ -232,9 +229,11 @@
             </span>
           </div>
 
-          <div class="text-xs text-slate-500 space-y-1.5 mt-2 border-t pt-2 border-slate-50">
+          <div class="text-xs text-slate-500 space-y-1 mt-2 border-t pt-2 border-slate-50">
             <p v-if="res.phone"><span class="font-semibold text-slate-700">電話：</span>{{ res.phone }}</p>
-            <p v-if="res.price"><span class="font-semibold text-slate-700">價格：</span>NT$ {{ res.price }}</p>
+            <p v-if="res.price"><span class="font-semibold text-slate-700">價格/均消：</span>NT$ {{ res.price }}</p>
+            <p v-if="res.address"><span class="font-semibold text-slate-700">地址：</span>{{ res.address }}</p>
+            <p v-if="res.menu"><span class="font-semibold text-slate-700">菜單/備註：</span>{{ res.menu }}</p>
             
             <div class="flex items-center justify-end pt-2">
               <button @click="startOrderFromCatalog(res)" class="text-amber-600 font-bold text-xs hover:underline flex items-center gap-1">
@@ -246,58 +245,112 @@
       </div>
     </section>
 
-    <!-- 3. 設定與 API 連接 (Settings) -->
-    <section v-if="currentTab === 'settings'" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-      <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
-        <h3 class="font-bold text-amber-800 text-xs mb-1"><i class="fa-solid fa-cloud"></i> Google 試算表雲端同步網址 (Web App URL)</h3>
+    <!-- 3. 設定頁面 (Settings) -->
+    <section v-if="currentTab === 'settings'" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-5">
+      <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
+        <h3 class="font-bold text-amber-800 text-xs mb-1"><i class="fa-solid fa-cloud"></i> Google 試算表 Web App URL</h3>
         <input 
           v-model="scriptUrl" 
           type="text" 
-          placeholder="貼上 Google Apps Script 部署後的 Web App URL..." 
+          placeholder="貼上部署後的網址..." 
           class="w-full bg-white border text-xs rounded-lg p-2 focus:outline-none focus:border-amber-500 mt-1"
         />
-        <p class="text-[10px] text-slate-500 mt-1">將此網址貼上後，全團人在 LINE 開啟本網頁時就能即時連線同步！</p>
+        <p class="text-[10px] text-slate-500 mt-1">貼上後即自動儲存，多台手機均可連線。</p>
       </div>
 
-      <h3 class="font-bold text-slate-800 text-sm pt-2">食物標題分類管理</h3>
-      <div class="flex gap-2">
-        <input 
-          v-model="newCategoryInput" 
-          type="text" 
-          placeholder="輸入分類標籤..." 
-          class="flex-1 bg-slate-50 border text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
-          @keyup.enter="addCategory"
-        />
-        <button @click="addCategory" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs">
-          新增
-        </button>
-      </div>
+      <div>
+        <h3 class="font-bold text-slate-800 text-sm mb-2">食物標籤管理</h3>
+        <div class="flex gap-2 mb-3">
+          <input 
+            v-model="newCategoryInput" 
+            type="text" 
+            placeholder="輸入新標籤 (例如: 飲料)" 
+            class="flex-1 bg-slate-50 border text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
+            @keyup.enter="addCategory"
+          />
+          <button @click="addCategory" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs">
+            新增標籤
+          </button>
+        </div>
 
-      <div class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pt-2">
-        <div v-for="cat in categories" :key="cat" class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-xl flex items-center gap-1.5">
-          <span># {{ cat }}</span>
-          <button @click="removeCategory(cat)" class="text-slate-400 hover:text-rose-500"><i class="fa-solid fa-xmark"></i></button>
+        <div class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+          <div v-for="cat in categories" :key="cat" class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-xl flex items-center gap-1.5">
+            <span># {{ cat }}</span>
+            <button @click="removeCategory(cat)" class="text-slate-400 hover:text-rose-500"><i class="fa-solid fa-xmark"></i></button>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- 新增餐廳 Modal 彈窗 -->
+    <!-- 新增餐廳 Modal 彈窗 (超強完整版) -->
     <div v-if="showAddModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-3 shadow-xl my-8">
+      <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-3 shadow-xl my-8 max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b pb-2">
           <h3 class="font-bold text-slate-800">建立新菜單 / 餐廳</h3>
           <button @click="showAddModal = false" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
         <div class="space-y-3 text-xs">
+          <!-- 快捷貼上 Google 地圖區 -->
+          <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-2">
+            <label class="block font-bold text-amber-800"><i class="fa-solid fa-bolt"></i> 貼上 Google 地圖分享文字/網址</label>
+            <div class="flex gap-1.5">
+              <input v-model="mapInput" type="text" placeholder="直接貼上文字或網址..." class="flex-1 bg-white border rounded-lg p-2 text-xs focus:outline-none">
+              <button @click="parseMapData" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg text-xs whitespace-nowrap">解析帶入</button>
+            </div>
+          </div>
+
           <div>
             <label class="block font-bold text-slate-600 mb-1">餐廳名稱 *</label>
             <input v-model="newRes.name" type="text" placeholder="例：家味小館" class="w-full bg-slate-50 border rounded-xl p-2.5">
           </div>
 
+          <!-- 勾選標籤區 -->
           <div>
-            <label class="block font-bold text-slate-600 mb-1">電話號碼</label>
-            <input v-model="newRes.phone" type="text" placeholder="例：04-22345678" class="w-full bg-slate-50 border rounded-xl p-2.5">
+            <label class="block font-bold text-slate-600 mb-1">選擇分類標籤（可複選）</label>
+            <div class="flex flex-wrap gap-1.5 p-2 bg-slate-50 rounded-xl border max-h-28 overflow-y-auto">
+              <button 
+                v-for="cat in categories" 
+                :key="cat"
+                @click="toggleNewResTag(cat)"
+                :class="newRes.tags.includes(cat) ? 'bg-amber-500 text-white' : 'bg-white text-slate-600 border'"
+                class="px-2 py-1 rounded-lg text-[10px] font-medium transition-all"
+              >
+                # {{ cat }}
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">電話號碼</label>
+              <input v-model="newRes.phone" type="text" placeholder="04-22345678" class="w-full bg-slate-50 border rounded-xl p-2">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">均消價格 ($)</label>
+              <input v-model="newRes.price" type="text" placeholder="100-200" class="w-full bg-slate-50 border rounded-xl p-2">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">評分 (1-5)</label>
+              <input v-model="newRes.rating" type="text" placeholder="4.5" class="w-full bg-slate-50 border rounded-xl p-2">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">地址</label>
+              <input v-model="newRes.address" type="text" placeholder="台中市..." class="w-full bg-slate-50 border rounded-xl p-2">
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">菜單備註 / 推薦招牌</label>
+            <textarea v-model="newRes.menu" rows="2" placeholder="推薦炸雞腿、招牌滷肉飯..." class="w-full bg-slate-50 border rounded-xl p-2"></textarea>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">菜單圖片網址 (選填)</label>
+            <input v-model="newRes.image" type="text" placeholder="https://..." class="w-full bg-slate-50 border rounded-xl p-2">
           </div>
         </div>
 
@@ -318,29 +371,37 @@
         const showAddModal = ref(false);
         const isLoading = ref(false);
 
+        // 雲端 Apps Script 網址
         const scriptUrl = ref(localStorage.getItem('eat_script_url') || '');
 
-        const categories = ref(['台式小吃', '便當', '平價', '速食', '滷味', '飲料']);
-        const restaurants = ref([
-          { id: 1, name: '家味小館', tags: ['台式小吃', '便當'], phone: '04-22345678', price: '100-200', rating: '3.8' }
-        ]);
+        // 分類標籤 (讀取 LocalStorage)
+        const defaultCategories = ['台式小吃', '便當', '平價', '速食', '滷味', '飲料', '火鍋', '日式'];
+        const categories = ref(JSON.parse(localStorage.getItem('eat_categories')) || defaultCategories);
+
+        // 餐廳清單 (讀取 LocalStorage)
+        const defaultRestaurants = [
+          { id: 1, name: '家味小館', tags: ['台式小吃', '便當'], phone: '04-22345678', price: '100-200', rating: '4.2', address: '台中市西區...', menu: '招牌排骨飯' }
+        ];
+        const restaurants = ref(JSON.parse(localStorage.getItem('eat_restaurants')) || defaultRestaurants);
 
         const selectedFilterCategories = ref([]);
         const pickedRestaurant = ref(null);
         const currentOrderRestaurant = ref(null);
 
         const newCategoryInput = ref('');
-        const newRes = ref({ name: '', phone: '', tags: [], price: '', rating: '' });
+        const mapInput = ref('');
+        const newRes = ref({ name: '', phone: '', tags: [], price: '', rating: '', address: '', menu: '', image: '' });
 
         const orderItems = ref([]);
         const orderForm = ref({ userName: '柏成', itemName: '', count: 1, price: null, note: '' });
 
+        // 自動持久化儲存至瀏覽器
+        watch(scriptUrl, (newVal) => localStorage.setItem('eat_script_url', newVal));
+        watch(categories, (newVal) => localStorage.setItem('eat_categories', JSON.stringify(newVal)), { deep: true });
+        watch(restaurants, (newVal) => localStorage.setItem('eat_restaurants', JSON.stringify(newVal)), { deep: true });
+
         onMounted(() => {
           if (scriptUrl.value) fetchCloudOrders();
-        });
-
-        watch(scriptUrl, (newVal) => {
-          localStorage.setItem('eat_script_url', newVal);
         });
 
         const toggleFilterCategory = (cat) => {
@@ -350,8 +411,9 @@
         };
 
         const addCategory = () => {
-          if (newCategoryInput.value.trim() && !categories.value.includes(newCategoryInput.value.trim())) {
-            categories.value.push(newCategoryInput.value.trim());
+          const val = newCategoryInput.value.trim();
+          if (val && !categories.value.includes(val)) {
+            categories.value.push(val);
             newCategoryInput.value = '';
           }
         };
@@ -360,22 +422,38 @@
           categories.value = categories.value.filter(c => c !== cat);
         };
 
+        const openAddModal = () => {
+          newRes.value = { name: '', phone: '', tags: [], price: '', rating: '', address: '', menu: '', image: '' };
+          mapInput.value = '';
+          showAddModal.value = true;
+        };
+
+        const toggleNewResTag = (cat) => {
+          const idx = newRes.value.tags.indexOf(cat);
+          if (idx > -1) newRes.value.tags.splice(idx, 1);
+          else newRes.value.tags.push(cat);
+        };
+
+        const parseMapData = () => {
+          if (!mapInput.value.trim()) return;
+          const text = mapInput.value.trim();
+          const lines = text.split('\n');
+          newRes.value.name = lines[0].replace(/https?:\/\/\S+/, '').trim() || text;
+        };
+
         const saveRestaurant = () => {
           if (!newRes.value.name.trim()) return alert('請輸入餐廳名稱！');
           restaurants.value.push({
             id: Date.now(),
-            name: newRes.value.name,
-            phone: newRes.value.phone,
-            tags: ['自訂'],
-            price: '100',
-            rating: '4.0'
+            ...newRes.value
           });
-          newRes.value = { name: '', phone: '', tags: [], price: '', rating: '' };
           showAddModal.value = false;
         };
 
         const deleteRestaurant = (id) => {
-          restaurants.value = restaurants.value.filter(r => r.id !== id);
+          if (confirm('確定要刪除這家餐廳嗎？')) {
+            restaurants.value = restaurants.value.filter(r => r.id !== id);
+          }
         };
 
         const fetchCloudOrders = async () => {
@@ -497,16 +575,18 @@
           }
           if (pool.length > 0) {
             pickedRestaurant.value = pool[Math.floor(Math.random() * pool.length)];
+          } else {
+            alert('沒有符合條件的餐廳！');
           }
         };
 
         return {
           currentTab, showAddModal, isLoading, scriptUrl, categories, restaurants,
           selectedFilterCategories, pickedRestaurant, currentOrderRestaurant, newCategoryInput,
-          newRes, orderItems, orderForm, totalAmount, totalItemCount, itemSummary,
-          toggleFilterCategory, addCategory, removeCategory, saveRestaurant, deleteRestaurant,
-          fetchCloudOrders, addOrderItem, clearCloudOrders, copyLineFormatText,
-          startOrderSection, startOrderFromCatalog, pickRandom
+          mapInput, newRes, orderItems, orderForm, totalAmount, totalItemCount, itemSummary,
+          toggleFilterCategory, addCategory, removeCategory, openAddModal, toggleNewResTag, parseMapData,
+          saveRestaurant, deleteRestaurant, fetchCloudOrders, addOrderItem, clearCloudOrders,
+          copyLineFormatText, startOrderSection, startOrderFromCatalog, pickRandom
         };
       }
     }).mount('#app');
