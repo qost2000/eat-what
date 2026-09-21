@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>等等吃什麼 - 旗艦完整版</title>
+  <title>等等吃什麼 - 終極修復版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -68,7 +68,7 @@
       </button>
     </div>
 
-    <!-- 點餐明細與開團專區 -->
+    <!-- 點餐專區 -->
     <div id="order-section" class="hidden space-y-3 bg-slate-100 p-4 rounded-2xl border border-slate-200">
       <div class="flex justify-between items-center border-b pb-2">
         <h3 class="font-bold text-slate-700 text-sm">🛒 當前點餐明細</h3>
@@ -206,33 +206,27 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
-    function fetchJSONP(url) {
+    // 真正的萬無一失 JSONP 通訊引擎
+    function requestJSONP(url) {
       return new Promise((resolve, reject) => {
         const cbName = 'cb_' + Math.random().toString(36).substring(2);
         const script = document.createElement('script');
+        
         window[cbName] = function(data) {
           delete window[cbName];
-          document.body.removeChild(script);
+          if (script.parentNode) document.body.removeChild(script);
           resolve(data);
         };
-        script.onerror = function(err) {
+
+        script.onerror = function() {
           delete window[cbName];
           if (script.parentNode) document.body.removeChild(script);
-          reject(err);
+          reject(new Error("網路請求失敗，請檢查 Apps Script 權限"));
         };
+
         const delimiter = url.includes('?') ? '&' : '?';
         script.src = `${url}${delimiter}callback=${cbName}&t=${Date.now()}`;
         document.body.appendChild(script);
-      });
-    }
-
-    // 正統穩定 POST 寫入
-    function postData(data) {
-      return fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
       });
     }
 
@@ -241,11 +235,12 @@
       if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>讀取中...';
 
       try {
-        const cloudData = await fetchJSONP(`${SCRIPT_URL}?action=getRestaurants`);
+        const cloudData = await requestJSONP(`${SCRIPT_URL}?action=getRestaurants`);
         if (Array.isArray(cloudData)) {
           restaurants = cloudData;
         }
       } catch (e) {
+        alert("雲端連線失敗！請確定 Google Apps Script 存取權限已改為「所有人 (Anyone)」。");
       } finally {
         if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>讀取雲端';
         renderMenu();
@@ -347,7 +342,7 @@
       container.innerHTML = '<p class="text-xs text-slate-400">載入菜單中...</p>';
 
       try {
-        const menuData = await fetchJSONP(`${SCRIPT_URL}?action=getMenu&restaurant=${encodeURIComponent(target.name)}`);
+        const menuData = await requestJSONP(`${SCRIPT_URL}?action=getMenu&restaurant=${encodeURIComponent(target.name)}`);
         if (Array.isArray(menuData) && menuData.length > 0) {
           container.innerHTML = menuData.map(m => `
             <div class="flex gap-1.5 item-row">
@@ -428,7 +423,6 @@
       const oldName = isEditing ? restaurants[editingIndex].name : "";
 
       const payload = {
-        action: isEditing ? "editRestaurant" : "addRestaurant",
         oldName: oldName,
         name,
         phone: document.getElementById('m-phone').value.trim(),
@@ -438,13 +432,16 @@
         menuItems
       };
 
+      const action = isEditing ? "editRestaurant" : "addRestaurant";
+      const apiUrl = `${SCRIPT_URL}?action=${action}&payload=${encodeURIComponent(JSON.stringify(payload))}`;
+
       try {
-        await postData(payload);
-        alert('儲存成功！已寫入 Google 試算表。');
+        await requestJSONP(apiUrl);
+        alert('儲存成功！已成功寫入 Google 試算表。');
         closeModal();
-        setTimeout(syncCloudRestaurants, 1500);
+        syncCloudRestaurants();
       } catch (e) {
-        alert('同步失敗，請再試一次');
+        alert('同步失敗：' + e.message);
       } finally {
         btnSave.disabled = false;
         btnSave.innerText = "儲存並同步試算表";
@@ -456,9 +453,9 @@
       if (!confirm(`確定要刪除「${target.name}」嗎？`)) return;
 
       try {
-        await postData({ action: "deleteRestaurant", name: target.name });
+        await requestJSONP(`${SCRIPT_URL}?action=deleteRestaurant&name=${encodeURIComponent(target.name)}`);
         alert('已成功刪除！');
-        setTimeout(syncCloudRestaurants, 1500);
+        syncCloudRestaurants();
       } catch (e) {
         alert('刪除失敗');
       }
@@ -496,7 +493,6 @@
       fetchSheetOrders();
     }
 
-    // 載入餐廳快速點餐選項
     async function loadQuickMenuItems() {
       const box = document.getElementById('quick-menu-box');
       const container = document.getElementById('quick-menu-items');
@@ -504,7 +500,7 @@
       container.innerHTML = '';
 
       try {
-        const menuData = await fetchJSONP(`${SCRIPT_URL}?action=getMenu&restaurant=${encodeURIComponent(currentRestaurant)}`);
+        const menuData = await requestJSONP(`${SCRIPT_URL}?action=getMenu&restaurant=${encodeURIComponent(currentRestaurant)}`);
         if (Array.isArray(menuData) && menuData.length > 0) {
           container.innerHTML = menuData.map(m => `
             <button onclick="pickQuickMenuItem('${m.item}', '${m.price}')" class="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-2.5 py-1 rounded-lg font-medium hover:bg-amber-100">
@@ -533,17 +529,11 @@
       btnSubmit.innerText = "⏳ 傳送中...";
 
       try {
-        await postData({
-          action: "addOrder",
-          restaurant: currentRestaurant,
-          user: user,
-          item: item,
-          price: price
-        });
+        await requestJSONP(`${SCRIPT_URL}?action=addOrder&restaurant=${encodeURIComponent(currentRestaurant)}&user=${encodeURIComponent(user)}&item=${encodeURIComponent(item)}&price=${encodeURIComponent(price)}`);
         document.getElementById('ord-item').value = '';
         document.getElementById('ord-price').value = '';
         alert('已傳送餐點並同步雲端！');
-        setTimeout(fetchSheetOrders, 1200);
+        fetchSheetOrders();
       } catch (e) {
         alert('同步失敗：' + e.message);
       } finally {
@@ -555,7 +545,7 @@
     async function fetchSheetOrders() {
       const container = document.getElementById('order-list');
       try {
-        const data = await fetchJSONP(`${SCRIPT_URL}?action=getOrders&restaurant=${encodeURIComponent(currentRestaurant)}`);
+        const data = await requestJSONP(`${SCRIPT_URL}?action=getOrders&restaurant=${encodeURIComponent(currentRestaurant)}`);
         if (Array.isArray(data) && data.length > 0) {
           currentOrders = data;
           container.innerHTML = data.map((o) => `
@@ -578,12 +568,11 @@
     async function deleteSingleOrder(user, item) {
       if (!confirm(`確定要刪除「${user}」點的「${item}」嗎？`)) return;
       try {
-        await postData({ action: "deleteOrder", restaurant: currentRestaurant, user: user, item: item });
-        setTimeout(fetchSheetOrders, 1200);
+        await requestJSONP(`${SCRIPT_URL}?action=deleteOrder&restaurant=${encodeURIComponent(currentRestaurant)}&user=${encodeURIComponent(user)}&item=${encodeURIComponent(item)}`);
+        fetchSheetOrders();
       } catch (e) {}
     }
 
-    // 複製 LINE 文字總結
     function copyLineSummary() {
       if (!currentOrders || currentOrders.length === 0) return alert('目前尚無點餐資料！');
       
