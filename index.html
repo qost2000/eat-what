@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>等等吃什麼 - 雲端即時同步版</title>
+  <title>等等吃什麼 - 全同步極速版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -85,7 +85,7 @@
         <input id="ord-user" type="text" placeholder="你的名字 *" class="w-full text-xs p-2.5 border rounded-lg">
         <input id="ord-item" type="text" placeholder="餐點名稱 *" class="w-full text-xs p-2.5 border rounded-lg">
         <input id="ord-price" type="number" placeholder="金額 *" class="w-full text-xs p-2.5 border rounded-lg">
-        <button onclick="submitOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">
+        <button id="btn-submit-ord" onclick="submitOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">
           ☁️ 傳送餐點並同步雲端
         </button>
       </div>
@@ -96,11 +96,9 @@
   <main id="sec-menu" class="hidden space-y-4">
     <div class="flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
       <span class="text-xs font-bold text-slate-500">雲端餐廳資料庫</span>
-      <div class="flex gap-2">
-        <button id="btn-sync" onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
-          <i class="fa-solid fa-rotate mr-1"></i>讀取雲端
-        </button>
-      </div>
+      <button id="btn-sync" onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
+        <i class="fa-solid fa-rotate mr-1"></i>讀取雲端
+      </button>
     </div>
 
     <button onclick="openAddModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl shadow-sm text-sm flex items-center justify-center gap-2">
@@ -166,7 +164,7 @@
       
       <div class="flex gap-2 pt-2">
         <button onclick="closeModal()" class="flex-1 py-2.5 text-xs border rounded-xl text-slate-600 font-bold">取消</button>
-        <button onclick="saveRestaurant()" class="flex-1 py-2.5 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">儲存並同步試算表</button>
+        <button id="btn-save-rest" onclick="saveRestaurant()" class="flex-1 py-2.5 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">儲存並同步試算表</button>
       </div>
     </div>
   </div>
@@ -175,23 +173,14 @@
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
 
     const DEFAULT_CATEGORY_TAGS = ["台式小吃", "麵食/飯類", "日式料理", "美式/速食", "火鍋", "咖啡/甜點/飲料", "便當", "炸雞", "燒烤/居酒屋"];
-    const DEFAULT_RESTAURANTS = [
-      { name: "家味小館", phone: "04-22345678", address: "台中市西區...", tags: ["台式小吃", "便當"], note: "招牌排骨飯" },
-      { name: "喵喵鯛魚燒", phone: "0958624479", address: "", tags: ["咖啡/甜點/飲料"], note: "" },
-      { name: "正騰和脆皮炸雞-永興店", phone: "0980010450", address: "40454臺南市北區建築里永興街41號", tags: ["美式/速食", "炸雞"], note: "" },
-      { name: "蘋果手雞 - 炸雞專家", phone: "", address: "", tags: ["美式/速食", "炸雞"], note: "" }
-    ];
-
-    let restaurants = JSON.parse(localStorage.getItem('restaurants')) || DEFAULT_RESTAURANTS;
+    let restaurants = [];
     let activeTags = [];
     let modalSelectedTags = [];
     let customCategoryTags = JSON.parse(localStorage.getItem('custom_category_tags')) || DEFAULT_CATEGORY_TAGS;
     let currentRestaurant = "";
-    let editingIndex = null; // 紀錄正在編輯的餐廳索引
+    let editingIndex = null;
 
     document.addEventListener("DOMContentLoaded", () => {
-      renderMenu();
-      renderTags();
       syncCloudRestaurants();
     });
 
@@ -204,15 +193,26 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
-    function fetchJSONP(url, callbackName) {
-      return new Promise((resolve) => {
+    // JSONP 強效傳輸技術
+    function fetchJSONP(url) {
+      return new Promise((resolve, reject) => {
+        const cbName = 'cb_' + Math.random().toString(36).substring(2);
         const script = document.createElement('script');
-        window[callbackName] = function(data) {
-          delete window[callbackName];
+        
+        window[cbName] = function(data) {
+          delete window[cbName];
           document.body.removeChild(script);
           resolve(data);
         };
-        script.src = `${url}&callback=${callbackName}&t=${Date.now()}`;
+
+        script.onerror = function(err) {
+          delete window[cbName];
+          if (script.parentNode) document.body.removeChild(script);
+          reject(err);
+        };
+
+        const delimiter = url.includes('?') ? '&' : '?';
+        script.src = `${url}${delimiter}callback=${cbName}&t=${Date.now()}`;
         document.body.appendChild(script);
       });
     }
@@ -222,11 +222,9 @@
       if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>讀取中...';
 
       try {
-        const cbName = 'cb_' + Math.random().toString(36).substring(2);
-        const cloudData = await fetchJSONP(`${SCRIPT_URL}?action=getRestaurants`, cbName);
-        if (Array.isArray(cloudData) && cloudData.length > 0) {
+        const cloudData = await fetchJSONP(`${SCRIPT_URL}?action=getRestaurants`);
+        if (Array.isArray(cloudData)) {
           restaurants = cloudData;
-          localStorage.setItem('restaurants', JSON.stringify(restaurants));
         }
       } catch (e) {
       } finally {
@@ -247,7 +245,7 @@
           <div class="flex justify-between items-start">
             <h4 class="font-bold text-slate-800 text-base">${r.name}</h4>
             <div class="flex items-center gap-2">
-              <button onclick="openEditModal(${i})" title="編輯餐廳與菜單" class="p-1 text-slate-400 hover:text-amber-500"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="openEditModal(${i})" title="編輯餐廳" class="p-1 text-slate-400 hover:text-amber-500"><i class="fa-solid fa-pen-to-square"></i></button>
               <button onclick="deleteRestaurant(${i})" title="刪除" class="p-1 text-slate-300 hover:text-rose-500"><i class="fa-solid fa-trash-can"></i></button>
             </div>
           </div>
@@ -326,13 +324,11 @@
       modalSelectedTags = target.tags ? [...target.tags] : [];
       renderModalTagOptions();
 
-      // 向雲端抓取既有菜單
       const container = document.getElementById('menu-items-container');
       container.innerHTML = '<p class="text-xs text-slate-400">載入菜單中...</p>';
-      
+
       try {
-        const cbName = 'cb_m_' + Math.random().toString(36).substring(2);
-        const menuData = await fetchJSONP(`${SCRIPT_URL}?action=getMenu&restaurant=${encodeURIComponent(target.name)}`, cbName);
+        const menuData = await fetchJSONP(`${SCRIPT_URL}?action=getMenu&restaurant=${encodeURIComponent(target.name)}`);
         if (Array.isArray(menuData) && menuData.length > 0) {
           container.innerHTML = menuData.map(m => `
             <div class="flex gap-1.5 item-row">
@@ -395,6 +391,10 @@
       const name = document.getElementById('m-name').value.trim();
       if (!name) return alert('請輸入名稱！');
 
+      const btnSave = document.getElementById('btn-save-rest');
+      btnSave.disabled = true;
+      btnSave.innerText = "⏳ 儲存中...";
+
       const menuRows = document.querySelectorAll('.item-row');
       const menuItems = [];
       menuRows.forEach(row => {
@@ -404,12 +404,11 @@
           menuItems.push({ item: itemName, price: itemPrice || "0" });
         }
       });
-      
+
       const isEditing = editingIndex !== null;
       const oldName = isEditing ? restaurants[editingIndex].name : "";
 
-      const obj = {
-        action: isEditing ? "editRestaurant" : "addRestaurant",
+      const payload = {
         oldName: oldName,
         name,
         phone: document.getElementById('m-phone').value.trim(),
@@ -419,44 +418,33 @@
         menuItems
       };
 
-      if (isEditing) {
-        restaurants[editingIndex] = { name: obj.name, phone: obj.phone, address: obj.address, tags: obj.tags, note: obj.note };
-      } else {
-        restaurants.push({ name: obj.name, phone: obj.phone, address: obj.address, tags: obj.tags, note: obj.note });
-      }
-
-      localStorage.setItem('restaurants', JSON.stringify(restaurants));
-      closeModal();
-      renderMenu();
-      renderTags();
+      const action = isEditing ? "editRestaurant" : "addRestaurant";
+      const apiUrl = `${SCRIPT_URL}?action=${action}&data=${encodeURIComponent(JSON.stringify(payload))}`;
 
       try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(obj)
-        });
-        alert('儲存成功！資料已同步寫入 Google 試算表。');
-      } catch (e) {}
+        await fetchJSONP(apiUrl);
+        alert('儲存成功！已寫入 Google 試算表。');
+        closeModal();
+        syncCloudRestaurants();
+      } catch (e) {
+        alert('同步失敗，請再試一次');
+      } finally {
+        btnSave.disabled = false;
+        btnSave.innerText = "儲存並同步試算表";
+      }
     }
 
     async function deleteRestaurant(i) {
       const target = restaurants[i];
       if (!confirm(`確定要刪除「${target.name}」嗎？`)) return;
 
-      restaurants.splice(i, 1);
-      localStorage.setItem('restaurants', JSON.stringify(restaurants));
-      renderMenu();
-
       try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: "deleteRestaurant", name: target.name })
-        });
-      } catch (e) {}
+        await fetchJSONP(`${SCRIPT_URL}?action=deleteRestaurant&name=${encodeURIComponent(target.name)}`);
+        alert('已成功刪除！');
+        syncCloudRestaurants();
+      } catch (e) {
+        alert('刪除失敗，請再試一次');
+      }
     }
 
     function drawRandom(useFilter) {
@@ -494,30 +482,31 @@
       const user = document.getElementById('ord-user').value.trim();
       const item = document.getElementById('ord-item').value.trim();
       const price = document.getElementById('ord-price').value.trim();
+      const btnSubmit = document.getElementById('btn-submit-ord');
 
       if (!user || !item || !price) return alert('請完整填寫名字、餐點與金額！');
 
+      btnSubmit.disabled = true;
+      btnSubmit.innerText = "⏳ 傳送中...";
+
       try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: "addOrder", restaurant: currentRestaurant, user, item, price })
-        });
-        alert('餐點已傳送！');
+        await fetchJSONP(`${SCRIPT_URL}?action=addOrder&restaurant=${encodeURIComponent(currentRestaurant)}&user=${encodeURIComponent(user)}&item=${encodeURIComponent(item)}&price=${encodeURIComponent(price)}`);
+        alert('餐點已傳送並寫入試算表！');
         document.getElementById('ord-item').value = '';
         document.getElementById('ord-price').value = '';
         fetchSheetOrders();
       } catch (e) {
         alert('同步失敗：' + e.message);
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerText = "☁️ 傳送餐點並同步雲端";
       }
     }
 
     async function fetchSheetOrders() {
       const container = document.getElementById('order-list');
       try {
-        const cbName = 'cb_ord_' + Math.random().toString(36).substring(2);
-        const data = await fetchJSONP(`${SCRIPT_URL}?action=getOrders&restaurant=${encodeURIComponent(currentRestaurant)}`, cbName);
+        const data = await fetchJSONP(`${SCRIPT_URL}?action=getOrders&restaurant=${encodeURIComponent(currentRestaurant)}`);
         if (Array.isArray(data) && data.length > 0) {
           container.innerHTML = data.map(o => `
             <div class="bg-white p-2.5 rounded-xl flex justify-between items-center shadow-sm border border-slate-100">
