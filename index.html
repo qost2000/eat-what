@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <title>等等吃什麼 - 旗艦完整版 v6.2</title>
+  <title>等等吃什麼 - 雲端同步修正版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -14,15 +13,13 @@
 </head>
 <body class="p-4 max-w-md mx-auto text-slate-800 pb-12">
 
-  <!-- Header -->
   <header class="text-center my-4">
     <h1 class="text-3xl font-extrabold text-amber-500 flex items-center justify-center gap-2">
       🍴 等等吃什麼
     </h1>
-    <p class="text-xs text-slate-400 mt-1">線上同步點餐與店家管理 (v6.2)</p>
+    <p class="text-xs text-slate-400 mt-1">線上同步點餐與店家管理</p>
   </header>
 
-  <!-- Navigation -->
   <nav class="flex justify-around bg-slate-200/60 p-1.5 rounded-2xl mb-5 text-sm text-slate-600">
     <button id="tab-random" onclick="switchTab('random')" class="flex-1 py-2.5 text-center rounded-xl active-tab transition-all">
       <i class="fa-solid fa-dice mr-1 text-amber-500"></i>亂數決策
@@ -42,74 +39,29 @@
         <label class="text-xs font-bold text-slate-500 flex items-center gap-1">
           <i class="fa-solid fa-tags text-amber-500"></i>分類標籤過濾
         </label>
-        <div class="flex gap-2">
-          <button onclick="toggleEditTagsMode()" id="btn-edit-mode" class="text-[11px] text-slate-500 hover:text-amber-600 font-bold">
-            ✏️ 編輯標籤
-          </button>
-          <button onclick="clearTagFilters()" class="text-[11px] text-amber-600 font-bold hover:underline">清除選擇</button>
-        </div>
+        <button onclick="clearTagFilters()" class="text-[11px] text-amber-600 font-bold hover:underline">清除選擇</button>
       </div>
-
-      <!-- 快速新增標籤輸入區 -->
-      <div id="quick-add-tag-box" class="flex gap-1.5 pb-1">
-        <input id="quick-tag-input" type="text" placeholder="新增自訂標籤..." class="flex-1 text-xs p-2 border rounded-xl focus:outline-none focus:border-amber-500">
-        <button onclick="addQuickTag()" class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm">
-          ➕ 新增
-        </button>
-      </div>
-
       <div id="tag-filters" class="flex flex-wrap gap-2 pt-1"></div>
     </div>
 
     <div class="grid grid-cols-2 gap-3">
-      <button onclick="drawRandom(true)" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white p-4 rounded-2xl shadow-md font-bold flex flex-col items-center justify-center gap-2 transition-all">
+      <button onclick="drawRandom(true)" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white p-4 rounded-2xl shadow-md font-bold flex flex-col items-center justify-center gap-2">
         <i class="fa-solid fa-filter text-2xl"></i>
         <span>依分類抽籤</span>
       </button>
-      <button onclick="drawRandom(false)" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white p-4 rounded-2xl shadow-md font-bold flex flex-col items-center justify-center gap-2 transition-all">
+      <button onclick="drawRandom(false)" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white p-4 rounded-2xl shadow-md font-bold flex flex-col items-center justify-center gap-2">
         <i class="fa-solid fa-shuffle text-2xl"></i>
         <span>隨機大盲盒</span>
       </button>
     </div>
 
-    <!-- 抽籤結果區 -->
     <div id="result-box" class="hidden bg-white p-5 rounded-2xl shadow-lg border-2 border-amber-400 text-center relative mt-4">
-      <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs px-3 py-0.5 rounded-full font-bold shadow-sm">決定吃這個！</span>
+      <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs px-3 py-0.5 rounded-full font-bold">決定吃這個！</span>
       <h2 id="res-name" class="text-2xl font-black text-slate-800 mt-1"></h2>
       <div id="res-tags" class="flex justify-center flex-wrap gap-1 my-2"></div>
       <p id="res-phone" class="text-xs text-slate-500"></p>
       <p id="res-address" class="text-xs text-slate-500 mt-0.5"></p>
       <p id="res-note" class="text-xs text-slate-400 mt-2 bg-slate-50 p-2 rounded-lg text-left whitespace-pre-line hidden"></p>
-      
-      <button onclick="startGroupOrder()" class="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all">
-        <i class="fa-solid fa-cart-shopping"></i>大家一起線上同步點餐 (開團)
-      </button>
-    </div>
-
-    <!-- 線上點餐區 -->
-    <div id="order-section" class="hidden space-y-3 bg-slate-100 p-4 rounded-2xl border border-slate-200">
-      <div class="flex justify-between items-center">
-        <h3 class="font-bold text-slate-700 text-sm flex items-center gap-1.5">
-          <i class="fa-solid fa-users text-amber-500"></i>線上點餐明細
-        </h3>
-        <button onclick="fetchSheetOrders()" class="text-xs bg-white border border-slate-300 px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-50 shadow-sm">
-          <i class="fa-solid fa-rotate mr-1 text-slate-400"></i>重新整理
-        </button>
-      </div>
-      
-      <div id="order-list" class="space-y-2 text-sm max-h-48 overflow-y-auto">
-        <p class="text-xs text-slate-400 text-center py-3">載入點餐明細中...</p>
-      </div>
-
-      <div class="bg-white p-3.5 rounded-xl space-y-2.5 border border-slate-200 shadow-sm">
-        <div class="text-xs font-bold text-slate-500 border-b pb-1">新增個人餐點</div>
-        <input id="ord-user" type="text" placeholder="你的名字 *" class="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-amber-500">
-        <input id="ord-item" type="text" placeholder="餐點名稱 *" class="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-amber-500">
-        <input id="ord-price" type="number" placeholder="金額 *" class="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-amber-500">
-        <button onclick="submitOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">
-          ☁️ 傳送餐點並同步雲端
-        </button>
-      </div>
     </div>
   </main>
 
@@ -119,10 +71,10 @@
       <span class="text-xs font-bold text-slate-500">雲端餐廳資料庫</span>
       <div class="flex gap-2">
         <button onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-2.5 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
-          <i class="fa-solid fa-rotate mr-1"></i>抓取雲端
+          <i class="fa-solid fa-rotate mr-1"></i>重新整理/抓取
         </button>
         <button onclick="initDefaultDataToCloud()" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1.5 rounded-xl font-bold hover:bg-indigo-100">
-          ⚡ 初始填入預設
+          ⚡ 初始資料同步寫入雲端
         </button>
       </div>
     </div>
@@ -136,19 +88,14 @@
   <!-- Section 3: 設定 -->
   <main id="sec-settings" class="hidden space-y-4">
     <div class="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
-      <h4 class="text-xs font-bold text-slate-700 border-b pb-1.5">🏷️ 食物分類標籤管理</h4>
-      <div id="setting-tag-list" class="flex flex-wrap gap-1.5"></div>
-    </div>
-
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
-      <h4 class="text-xs font-bold text-slate-700 border-b pb-1.5">🔄 資料同步狀態</h4>
-      <p class="text-xs text-slate-500 leading-relaxed">
-        ✅ 已自動連結您的 Google 試算表雲端資料庫。<br>預設包含 Restaurants 與 Orders 工作表自動初始化建立。
-      </p>
+      <h4 class="text-xs font-bold text-slate-700 border-b pb-1.5">🧹 資料清理</h4>
+      <button onclick="clearLocalCache()" class="w-full bg-rose-50 text-rose-600 border border-rose-200 py-2.5 rounded-xl text-xs font-bold hover:bg-rose-100">
+        🗑️ 清除本地快取並強制同步試算表
+      </button>
     </div>
   </main>
 
-  <!-- Modal: 新增餐廳 / 貼上 Google 地圖 -->
+  <!-- Modal: 新增餐廳 -->
   <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
     <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3 shadow-2xl">
       <div class="flex justify-between items-center border-b pb-2">
@@ -157,30 +104,29 @@
       </div>
 
       <div class="bg-amber-50 p-2.5 rounded-xl border border-amber-200 space-y-1.5">
-        <label class="text-[11px] font-bold text-amber-900 block">📍 快速貼上 Google 地圖分享資訊：</label>
+        <label class="text-[11px] font-bold text-amber-900 block">📍 貼上 Google 地圖分享資訊：</label>
         <div class="flex gap-1.5">
-          <input id="gmap-input" type="text" placeholder="貼上 Google 地圖分享文字..." class="flex-1 text-[11px] p-2 border rounded-lg focus:outline-none bg-white">
-          <button onclick="parseGMapInfo()" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-2.5 rounded-lg">自動拆解</button>
+          <input id="gmap-input" type="text" placeholder="貼上分享內容..." class="flex-1 text-[11px] p-2 border rounded-lg focus:outline-none bg-white">
+          <button onclick="parseGMapInfo()" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-2.5 rounded-lg">解析</button>
         </div>
       </div>
 
       <input id="m-name" type="text" placeholder="餐廳名稱 *" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
       <input id="m-phone" type="text" placeholder="電話 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
       <input id="m-address" type="text" placeholder="地址 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
-      <input id="m-tags" type="text" placeholder="標籤 (用空格隔開，例如: 便當 美式)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
-      <textarea id="m-note" placeholder="菜單 / 備註資訊 (選填)" class="w-full text-xs p-2.5 border rounded-xl h-20 focus:outline-none focus:border-amber-500"></textarea>
+      <input id="m-tags" type="text" placeholder="標籤 (空白隔開，如: 便當 美式)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
+      <textarea id="m-note" placeholder="備註資訊 (選填)" class="w-full text-xs p-2.5 border rounded-xl h-20 focus:outline-none focus:border-amber-500"></textarea>
       
       <div class="flex gap-2 pt-2">
         <button onclick="closeModal()" class="flex-1 py-2.5 text-xs border rounded-xl text-slate-600 font-bold">取消</button>
-        <button onclick="saveRestaurant()" class="flex-1 py-2.5 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">儲存並上傳雲端</button>
+        <button onclick="saveRestaurant()" class="flex-1 py-2.5 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">儲存並寫入雲端</button>
       </div>
     </div>
   </div>
 
   <script>
-    const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
 
-    const INITIAL_TAGS = ["台式小吃", "麵食/飯類", "日式料理", "美式/速食", "火鍋", "咖啡/甜點/飲料", "便當", "炸雞"];
     const DEFAULT_RESTAURANTS = [
       { name: "家味小館", phone: "04-22345678", address: "台中市西區...", tags: ["台式小吃", "便當"], note: "招牌排骨飯" },
       { name: "喵喵鯛魚燒", phone: "0958624479", address: "", tags: ["咖啡/甜點/飲料"], note: "" },
@@ -188,15 +134,8 @@
       { name: "蘋果手雞 - 炸雞專家", phone: "", address: "", tags: ["美式/速食", "炸雞"], note: "" }
     ];
 
-    let customTags = JSON.parse(localStorage.getItem('custom_tags')) || INITIAL_TAGS;
-    let restaurants = JSON.parse(localStorage.getItem('restaurants')) || DEFAULT_RESTAURANTS;
-
+    let restaurants = [];
     let activeTags = [];
-    let isEditTagsMode = false;
-    let editRestaurantIndex = null;
-    let currentRestaurant = "";
-
-    function getScriptUrl() { return DEFAULT_SCRIPT_URL; }
 
     document.addEventListener("DOMContentLoaded", () => {
       syncCloudRestaurants();
@@ -211,137 +150,43 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
-    function renderTags() {
-      const container = document.getElementById('tag-filters');
-      container.innerHTML = customTags.map((t, idx) => {
-        if (isEditTagsMode) {
-          return `
-            <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full border border-amber-300 font-medium">
-              # ${t}
-              <button onclick="editTagName(${idx})" class="text-slate-500 hover:text-amber-700 ml-1">✏️</button>
-              <button onclick="deleteTag(${idx})" class="text-rose-500 font-bold hover:text-rose-700 ml-0.5">✕</button>
-            </span>
-          `;
-        }
-        return `
-          <button onclick="toggleTag('${t}')" class="px-3 py-1 rounded-full text-xs font-medium border transition-all ${activeTags.includes(t) ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
-            # ${t}
-          </button>
-        `;
-      }).join('');
-
-      renderSettingTags();
-    }
-
-    function toggleEditTagsMode() {
-      isEditTagsMode = !isEditTagsMode;
-      document.getElementById('btn-edit-mode').innerText = isEditTagsMode ? "✅ 完成編輯" : "✏️ 編輯標籤";
-      renderTags();
-    }
-
-    function addQuickTag() {
-      const input = document.getElementById('quick-tag-input');
-      const val = input.value.trim();
-      if (!val) return;
-      if (!customTags.includes(val)) {
-        customTags.push(val);
-        localStorage.setItem('custom_tags', JSON.stringify(customTags));
-        renderTags();
-      }
-      input.value = '';
-    }
-
-    function editTagName(idx) {
-      const oldName = customTags[idx];
-      const newName = prompt("請輸入新的標籤名稱：", oldName);
-      if (newName && newName.trim() !== "") {
-        customTags[idx] = newName.trim();
-        localStorage.setItem('custom_tags', JSON.stringify(customTags));
-        renderTags();
-      }
-    }
-
-    function deleteTag(idx) {
-      if (confirm(`確定要刪除標籤「${customTags[idx]}」嗎？`)) {
-        customTags.splice(idx, 1);
-        localStorage.setItem('custom_tags', JSON.stringify(customTags));
-        renderTags();
-      }
-    }
-
-    function toggleTag(t) {
-      activeTags = activeTags.includes(t) ? activeTags.filter(x => x !== t) : [...activeTags, t];
-      renderTags();
-    }
-
-    function clearTagFilters() { activeTags = []; renderTags(); }
-
-    function renderSettingTags() {
-      const container = document.getElementById('setting-tag-list');
-      container.innerHTML = customTags.map((t, idx) => `
-        <span class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-lg border">
-          # ${t}
-          <button onclick="deleteTag(${idx})" class="text-rose-500 font-bold hover:text-rose-700">✕</button>
-        </span>
-      `).join('');
-    }
-
-    function parseGMapInfo() {
-      const raw = document.getElementById('gmap-input').value.trim();
-      if (!raw) return alert("請貼上 Google 地圖的分享內容！");
-
-      const phoneMatch = raw.match(/(0\d{1,2}-?\d{6,8}|09\d{8})/);
-      if (phoneMatch) document.getElementById('m-phone').value = phoneMatch[0];
-
-      const lines = raw.split(/\n|,|·/);
-      if (lines.length > 0) {
-        document.getElementById('m-name').value = lines[0].replace(/https?:\/\/\S+/g, '').trim();
-      }
-
-      const addrMatch = raw.match(/(..市|..縣).+?[路街號]/);
-      if (addrMatch) document.getElementById('m-address').value = addrMatch[0];
-
-      document.getElementById('m-note').value = raw;
-      alert("已成功解析並填入欄位！");
-    }
-
     async function syncCloudRestaurants() {
-      const url = getScriptUrl();
       try {
-        const res = await fetch(`${url}?action=getRestaurants&t=${Date.now()}`);
+        const res = await fetch(`${SCRIPT_URL}?action=getRestaurants&t=${Date.now()}`);
         const cloudData = await res.json();
         if (cloudData && cloudData.length > 0) {
           restaurants = cloudData;
           localStorage.setItem('restaurants', JSON.stringify(restaurants));
+        } else {
+          restaurants = JSON.parse(localStorage.getItem('restaurants')) || [];
         }
-      } catch (e) {}
+      } catch (e) {
+        restaurants = JSON.parse(localStorage.getItem('restaurants')) || [];
+      }
       renderMenu();
       renderTags();
     }
 
-    /* 初始填入預設餐廳資料到雲端試算表 */
     async function initDefaultDataToCloud() {
-      if (!confirm("確定要將預設餐廳資料初始化寫入雲端嗎？這會重置試算表中的內容。")) return;
+      if (!confirm("要將預設的餐廳資料（家味小館、喵喵鯛魚燒等）覆蓋寫入 Google 試算表嗎？")) return;
       try {
-        await fetch(getScriptUrl(), {
+        await fetch(SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: "resetRestaurants", list: DEFAULT_RESTAURANTS })
         });
-        restaurants = DEFAULT_RESTAURANTS;
-        localStorage.setItem('restaurants', JSON.stringify(restaurants));
-        renderMenu();
-        alert('初始店家資料已成功填入雲端！');
+        alert('已成功寫入雲端！請稍等 3 秒後自動重新讀取。');
+        setTimeout(syncCloudRestaurants, 3000);
       } catch (e) {
-        alert('初始化失敗：' + e.message);
+        alert('寫入失敗：' + e.message);
       }
     }
 
     function renderMenu() {
       const container = document.getElementById('restaurant-list');
       if (restaurants.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">目前尚無餐廳，點選上方「⚡ 初始填入預設」快速寫入！</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">目前試算表無資料，請點右上角「⚡ 初始資料同步寫入雲端」！</p>';
         return;
       }
       container.innerHTML = restaurants.map((r, i) => `
@@ -349,8 +194,7 @@
           <div class="flex justify-between items-start">
             <h4 class="font-bold text-slate-800 text-base">${r.name}</h4>
             <div class="flex items-center gap-2 text-slate-400">
-              <button onclick="openEditModal(${i})" title="編輯" class="p-1 hover:text-amber-500"><i class="fa-solid fa-pen-to-square"></i></button>
-              <button onclick="deleteRestaurant(${i})" title="刪除" class="p-1 hover:text-rose-500 text-slate-300"><i class="fa-solid fa-trash-can"></i></button>
+              <button onclick="deleteRestaurant(${i})" title="刪除" class="p-1 hover:text-rose-500 text-slate-400"><i class="fa-solid fa-trash-can"></i></button>
             </div>
           </div>
           <div class="flex flex-wrap gap-1 mt-1.5">${(r.tags||[]).map(t => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#${t}</span>`).join('')}</div>
@@ -361,17 +205,16 @@
       `).join('');
     }
 
-    /* 刪除餐廳（同步雲端） */
     async function deleteRestaurant(i) {
       const target = restaurants[i];
-      if (!confirm(`確定要刪除「${target.name}」嗎？此動作會同時從雲端刪除。`)) return;
+      if (!confirm(`確定要刪除「${target.name}」嗎？`)) return;
 
       restaurants.splice(i, 1);
       localStorage.setItem('restaurants', JSON.stringify(restaurants));
       renderMenu();
 
       try {
-        await fetch(getScriptUrl(), {
+        await fetch(SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
@@ -380,20 +223,42 @@
       } catch (e) {}
     }
 
-    function openAddModal() { editRestaurantIndex = null; clearModal(); document.getElementById('modal-title').innerText="新增餐廳"; document.getElementById('modal').classList.remove('hidden'); }
-    function openEditModal(i) {
-      editRestaurantIndex = i;
-      const r = restaurants[i];
-      document.getElementById('modal-title').innerText="編輯餐廳資訊";
-      document.getElementById('m-name').value = r.name;
-      document.getElementById('m-phone').value = r.phone || '';
-      document.getElementById('m-address').value = r.address || '';
-      document.getElementById('m-tags').value = (r.tags || []).join(' ');
-      document.getElementById('m-note').value = r.note || '';
-      document.getElementById('modal').classList.remove('hidden');
+    function renderTags() {
+      const container = document.getElementById('tag-filters');
+      const allTags = [...new Set(restaurants.flatMap(r => r.tags || []))];
+      if (allTags.length === 0) {
+        container.innerHTML = '<span class="text-xs text-slate-400">目前無可用標籤</span>';
+        return;
+      }
+      container.innerHTML = allTags.map(t => `
+        <button onclick="toggleTag('${t}')" class="px-3 py-1 rounded-full text-xs font-medium border transition-all ${activeTags.includes(t) ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
+          # ${t}
+        </button>
+      `).join('');
     }
+
+    function toggleTag(t) {
+      activeTags = activeTags.includes(t) ? activeTags.filter(x => x !== t) : [...activeTags, t];
+      renderTags();
+    }
+
+    function clearTagFilters() { activeTags = []; renderTags(); }
+
+    function openAddModal() { clearModal(); document.getElementById('modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
     function clearModal() { ['gmap-input','m-name','m-phone','m-address','m-tags','m-note'].forEach(id => document.getElementById(id).value = ''); }
+
+    function parseGMapInfo() {
+      const raw = document.getElementById('gmap-input').value.trim();
+      if (!raw) return alert("請貼上文字！");
+      const phoneMatch = raw.match(/(0\d{1,2}-?\d{6,8}|09\d{8})/);
+      if (phoneMatch) document.getElementById('m-phone').value = phoneMatch[0];
+      const lines = raw.split(/\n|,|·/);
+      if (lines.length > 0) document.getElementById('m-name').value = lines[0].replace(/https?:\/\/\S+/g, '').trim();
+      const addrMatch = raw.match(/(..市|..縣).+?[路街號]/);
+      if (addrMatch) document.getElementById('m-address').value = addrMatch[0];
+      document.getElementById('m-note').value = raw;
+    }
 
     async function saveRestaurant() {
       const name = document.getElementById('m-name').value.trim();
@@ -408,16 +273,14 @@
         note: document.getElementById('m-note').value.trim()
       };
 
-      if (editRestaurantIndex !== null) restaurants[editRestaurantIndex] = obj;
-      else restaurants.push(obj);
-
+      restaurants.push(obj);
       localStorage.setItem('restaurants', JSON.stringify(restaurants));
       closeModal();
       renderMenu();
       renderTags();
 
       try {
-        await fetch(getScriptUrl(), {
+        await fetch(SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
@@ -431,11 +294,9 @@
       if (useFilter && activeTags.length > 0) {
         pool = restaurants.filter(r => r.tags && r.tags.some(t => activeTags.includes(t)));
       }
-      if (pool.length === 0) return alert('沒有符合篩選條件的餐廳！');
+      if (pool.length === 0) return alert('無符合條件的餐廳！');
       
       const pick = pool[Math.floor(Math.random() * pool.length)];
-      currentRestaurant = pick.name;
-      
       document.getElementById('res-name').innerText = pick.name;
       document.getElementById('res-tags').innerHTML = (pick.tags || []).map(t => `<span class="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-bold border border-amber-200">#${t}</span>`).join('');
       document.getElementById('res-phone').innerText = pick.phone ? `📞 電話：${pick.phone}` : '';
@@ -450,56 +311,12 @@
       }
 
       document.getElementById('result-box').classList.remove('hidden');
-      document.getElementById('order-section').classList.add('hidden');
     }
 
-    function startGroupOrder() {
-      document.getElementById('order-section').classList.remove('hidden');
-      fetchSheetOrders();
-    }
-
-    async function submitOrder() {
-      const url = getScriptUrl();
-      const user = document.getElementById('ord-user').value.trim();
-      const item = document.getElementById('ord-item').value.trim();
-      const price = document.getElementById('ord-price').value.trim();
-
-      if (!user || !item || !price) return alert('請完整填寫名字、餐點與金額！');
-
-      try {
-        await fetch(url, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: "addOrder", restaurant: currentRestaurant, user, item, price })
-        });
-        alert('餐點已傳送！');
-        document.getElementById('ord-item').value = '';
-        document.getElementById('ord-price').value = '';
-        fetchSheetOrders();
-      } catch (e) {
-        alert('同步失敗：' + e.message);
-      }
-    }
-
-    async function fetchSheetOrders() {
-      const url = getScriptUrl();
-      const container = document.getElementById('order-list');
-      try {
-        const res = await fetch(`${url}?restaurant=${encodeURIComponent(currentRestaurant)}&t=${Date.now()}`);
-        const data = await res.json();
-        if (data && data.length > 0) {
-          container.innerHTML = data.map(o => `
-            <div class="bg-white p-2.5 rounded-xl flex justify-between items-center shadow-sm border border-slate-100">
-              <span class="font-bold text-slate-700">${o.user}</span>
-              <span class="text-slate-600 text-xs">${o.item}</span>
-              <span class="font-bold text-amber-600">$${o.price}</span>
-            </div>
-          `).join('');
-        } else {
-          container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">目前尚無人點餐</p>';
-        }
-      } catch (e) {}
+    function clearLocalCache() {
+      localStorage.clear();
+      alert('已清理快取！正在向雲端重新抓取...');
+      syncCloudRestaurants();
     }
   </script>
 </body>
