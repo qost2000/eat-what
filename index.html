@@ -4,9 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>等等吃什麼 - 旗艦完整版 v6.0</title>
+  <title>等等吃什麼 - 旗艦完整版 v6.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -21,7 +19,7 @@
     <h1 class="text-3xl font-extrabold text-amber-500 flex items-center justify-center gap-2">
       🍴 等等吃什麼
     </h1>
-    <p class="text-xs text-slate-400 mt-1">跨手機 LINE 即時同步點餐算錢 (v6.0 旗艦版)</p>
+    <p class="text-xs text-slate-400 mt-1">線上同步點餐與店家管理 (v6.2)</p>
   </header>
 
   <!-- Navigation -->
@@ -60,7 +58,6 @@
         </button>
       </div>
 
-      <!-- 標籤按鈕展示區 -->
       <div id="tag-filters" class="flex flex-wrap gap-2 pt-1"></div>
     </div>
 
@@ -120,9 +117,14 @@
   <main id="sec-menu" class="hidden space-y-4">
     <div class="flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
       <span class="text-xs font-bold text-slate-500">雲端餐廳資料庫</span>
-      <button onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
-        <i class="fa-solid fa-rotate mr-1"></i>抓取最新雲端店家
-      </button>
+      <div class="flex gap-2">
+        <button onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-2.5 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
+          <i class="fa-solid fa-rotate mr-1"></i>抓取雲端
+        </button>
+        <button onclick="initDefaultDataToCloud()" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1.5 rounded-xl font-bold hover:bg-indigo-100">
+          ⚡ 初始填入預設
+        </button>
+      </div>
     </div>
 
     <button onclick="openAddModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl shadow-sm text-sm flex items-center justify-center gap-2">
@@ -141,7 +143,7 @@
     <div class="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
       <h4 class="text-xs font-bold text-slate-700 border-b pb-1.5">🔄 資料同步狀態</h4>
       <p class="text-xs text-slate-500 leading-relaxed">
-        ✅ 已自動連結您的 Google 試算表雲端資料庫。<br>所有新增的餐廳與點餐紀錄均會即時同步！
+        ✅ 已自動連結您的 Google 試算表雲端資料庫。<br>預設包含 Restaurants 與 Orders 工作表自動初始化建立。
       </p>
     </div>
   </main>
@@ -154,11 +156,10 @@
         <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
-      <!-- Google 地圖一鍵貼上解析區 -->
       <div class="bg-amber-50 p-2.5 rounded-xl border border-amber-200 space-y-1.5">
         <label class="text-[11px] font-bold text-amber-900 block">📍 快速貼上 Google 地圖分享資訊：</label>
         <div class="flex gap-1.5">
-          <input id="gmap-input" type="text" placeholder="貼上 Google 地圖分享文字或連結..." class="flex-1 text-[11px] p-2 border rounded-lg focus:outline-none bg-white">
+          <input id="gmap-input" type="text" placeholder="貼上 Google 地圖分享文字..." class="flex-1 text-[11px] p-2 border rounded-lg focus:outline-none bg-white">
           <button onclick="parseGMapInfo()" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-2.5 rounded-lg">自動拆解</button>
         </div>
       </div>
@@ -180,23 +181,22 @@
     const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
 
     const INITIAL_TAGS = ["台式小吃", "麵食/飯類", "日式料理", "美式/速食", "火鍋", "咖啡/甜點/飲料", "便當", "炸雞"];
-
-    let customTags = JSON.parse(localStorage.getItem('custom_tags')) || INITIAL_TAGS;
-    let restaurants = JSON.parse(localStorage.getItem('restaurants')) || [
+    const DEFAULT_RESTAURANTS = [
       { name: "家味小館", phone: "04-22345678", address: "台中市西區...", tags: ["台式小吃", "便當"], note: "招牌排骨飯" },
       { name: "喵喵鯛魚燒", phone: "0958624479", address: "", tags: ["咖啡/甜點/飲料"], note: "" },
       { name: "正騰和脆皮炸雞-永興店", phone: "0980010450", address: "40454臺南市北區建築里永興街41號", tags: ["美式/速食", "炸雞"], note: "" },
       { name: "蘋果手雞 - 炸雞專家", phone: "", address: "", tags: ["美式/速食", "炸雞"], note: "" }
     ];
 
+    let customTags = JSON.parse(localStorage.getItem('custom_tags')) || INITIAL_TAGS;
+    let restaurants = JSON.parse(localStorage.getItem('restaurants')) || DEFAULT_RESTAURANTS;
+
     let activeTags = [];
     let isEditTagsMode = false;
     let editRestaurantIndex = null;
     let currentRestaurant = "";
 
-    function getScriptUrl() {
-      return DEFAULT_SCRIPT_URL;
-    }
+    function getScriptUrl() { return DEFAULT_SCRIPT_URL; }
 
     document.addEventListener("DOMContentLoaded", () => {
       syncCloudRestaurants();
@@ -211,7 +211,6 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
-    /* 標籤管理 (亂數頁內直接編輯) */
     function renderTags() {
       const container = document.getElementById('tag-filters');
       container.innerHTML = customTags.map((t, idx) => {
@@ -287,22 +286,18 @@
       `).join('');
     }
 
-    /* Google 地圖自動拆解 */
     function parseGMapInfo() {
       const raw = document.getElementById('gmap-input').value.trim();
       if (!raw) return alert("請貼上 Google 地圖的分享內容！");
 
-      // 自動解析電話
       const phoneMatch = raw.match(/(0\d{1,2}-?\d{6,8}|09\d{8})/);
       if (phoneMatch) document.getElementById('m-phone').value = phoneMatch[0];
 
-      // 自動解析名稱（抓取第一段文字）
       const lines = raw.split(/\n|,|·/);
       if (lines.length > 0) {
         document.getElementById('m-name').value = lines[0].replace(/https?:\/\/\S+/g, '').trim();
       }
 
-      // 如果有包含地址
       const addrMatch = raw.match(/(..市|..縣).+?[路街號]/);
       if (addrMatch) document.getElementById('m-address').value = addrMatch[0];
 
@@ -310,7 +305,6 @@
       alert("已成功解析並填入欄位！");
     }
 
-    /* 雲端資料同步 */
     async function syncCloudRestaurants() {
       const url = getScriptUrl();
       try {
@@ -325,10 +319,29 @@
       renderTags();
     }
 
+    /* 初始填入預設餐廳資料到雲端試算表 */
+    async function initDefaultDataToCloud() {
+      if (!confirm("確定要將預設餐廳資料初始化寫入雲端嗎？這會重置試算表中的內容。")) return;
+      try {
+        await fetch(getScriptUrl(), {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "resetRestaurants", list: DEFAULT_RESTAURANTS })
+        });
+        restaurants = DEFAULT_RESTAURANTS;
+        localStorage.setItem('restaurants', JSON.stringify(restaurants));
+        renderMenu();
+        alert('初始店家資料已成功填入雲端！');
+      } catch (e) {
+        alert('初始化失敗：' + e.message);
+      }
+    }
+
     function renderMenu() {
       const container = document.getElementById('restaurant-list');
       if (restaurants.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">目前尚無餐廳，點選上方抓取最新雲端店家！</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">目前尚無餐廳，點選上方「⚡ 初始填入預設」快速寫入！</p>';
         return;
       }
       container.innerHTML = restaurants.map((r, i) => `
@@ -336,7 +349,8 @@
           <div class="flex justify-between items-start">
             <h4 class="font-bold text-slate-800 text-base">${r.name}</h4>
             <div class="flex items-center gap-2 text-slate-400">
-              <button onclick="openEditModal(${i})" class="p-1 hover:text-amber-500"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="openEditModal(${i})" title="編輯" class="p-1 hover:text-amber-500"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteRestaurant(${i})" title="刪除" class="p-1 hover:text-rose-500 text-slate-300"><i class="fa-solid fa-trash-can"></i></button>
             </div>
           </div>
           <div class="flex flex-wrap gap-1 mt-1.5">${(r.tags||[]).map(t => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#${t}</span>`).join('')}</div>
@@ -345,6 +359,25 @@
           ${r.note ? `<p class="text-xs text-slate-400 mt-1.5 bg-slate-50 p-2 rounded-lg">備註: ${r.note}</p>` : ''}
         </div>
       `).join('');
+    }
+
+    /* 刪除餐廳（同步雲端） */
+    async function deleteRestaurant(i) {
+      const target = restaurants[i];
+      if (!confirm(`確定要刪除「${target.name}」嗎？此動作會同時從雲端刪除。`)) return;
+
+      restaurants.splice(i, 1);
+      localStorage.setItem('restaurants', JSON.stringify(restaurants));
+      renderMenu();
+
+      try {
+        await fetch(getScriptUrl(), {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "deleteRestaurant", name: target.name })
+        });
+      } catch (e) {}
     }
 
     function openAddModal() { editRestaurantIndex = null; clearModal(); document.getElementById('modal-title').innerText="新增餐廳"; document.getElementById('modal').classList.remove('hidden'); }
@@ -390,10 +423,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(obj)
         });
-        alert('餐廳已成功同步至雲端！所有手機皆可看到。');
-      } catch (e) {
-        alert('雲端同步失敗');
-      }
+      } catch (e) {}
     }
 
     function drawRandom(useFilter) {
@@ -441,7 +471,7 @@
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ restaurant: currentRestaurant, user, item, price })
+          body: JSON.stringify({ action: "addOrder", restaurant: currentRestaurant, user, item, price })
         });
         alert('餐點已傳送！');
         document.getElementById('ord-item').value = '';
