@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>等等吃什麼 - 全同步極速版</title>
+  <title>等等吃什麼 - 旗艦完整版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -68,16 +68,28 @@
       </button>
     </div>
 
+    <!-- 點餐明細與開團專區 -->
     <div id="order-section" class="hidden space-y-3 bg-slate-100 p-4 rounded-2xl border border-slate-200">
-      <div class="flex justify-between items-center">
+      <div class="flex justify-between items-center border-b pb-2">
         <h3 class="font-bold text-slate-700 text-sm">🛒 當前點餐明細</h3>
-        <button onclick="fetchSheetOrders()" class="text-xs bg-white border border-slate-300 px-2.5 py-1 rounded-lg text-slate-600">
-          <i class="fa-solid fa-rotate mr-1"></i>重新整理
-        </button>
+        <div class="flex gap-2">
+          <button onclick="copyLineSummary()" class="text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-lg font-bold hover:bg-emerald-700 shadow-sm">
+            <i class="fa-brands fa-line mr-1"></i>複製 LINE 明細
+          </button>
+          <button onclick="fetchSheetOrders()" class="text-xs bg-white border border-slate-300 px-2 py-1 rounded-lg text-slate-600">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
+        </div>
       </div>
       
       <div id="order-list" class="space-y-2 text-sm max-h-48 overflow-y-auto">
         <p class="text-xs text-slate-400 text-center py-3">載入點餐明細中...</p>
+      </div>
+
+      <!-- 快捷點餐菜單區 -->
+      <div id="quick-menu-box" class="hidden bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+        <label class="text-[11px] font-bold text-slate-500 block">💡 快速點選本店菜單：</label>
+        <div id="quick-menu-items" class="flex flex-wrap gap-1.5"></div>
       </div>
 
       <div class="bg-white p-3.5 rounded-xl space-y-2.5 border border-slate-200">
@@ -179,6 +191,7 @@
     let customCategoryTags = JSON.parse(localStorage.getItem('custom_category_tags')) || DEFAULT_CATEGORY_TAGS;
     let currentRestaurant = "";
     let editingIndex = null;
+    let currentOrders = [];
 
     document.addEventListener("DOMContentLoaded", () => {
       syncCloudRestaurants();
@@ -193,27 +206,33 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
-    // JSONP 強效傳輸技術
     function fetchJSONP(url) {
       return new Promise((resolve, reject) => {
         const cbName = 'cb_' + Math.random().toString(36).substring(2);
         const script = document.createElement('script');
-        
         window[cbName] = function(data) {
           delete window[cbName];
           document.body.removeChild(script);
           resolve(data);
         };
-
         script.onerror = function(err) {
           delete window[cbName];
           if (script.parentNode) document.body.removeChild(script);
           reject(err);
         };
-
         const delimiter = url.includes('?') ? '&' : '?';
         script.src = `${url}${delimiter}callback=${cbName}&t=${Date.now()}`;
         document.body.appendChild(script);
+      });
+    }
+
+    // 正統穩定 POST 寫入
+    function postData(data) {
+      return fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
       });
     }
 
@@ -409,6 +428,7 @@
       const oldName = isEditing ? restaurants[editingIndex].name : "";
 
       const payload = {
+        action: isEditing ? "editRestaurant" : "addRestaurant",
         oldName: oldName,
         name,
         phone: document.getElementById('m-phone').value.trim(),
@@ -418,14 +438,11 @@
         menuItems
       };
 
-      const action = isEditing ? "editRestaurant" : "addRestaurant";
-      const apiUrl = `${SCRIPT_URL}?action=${action}&data=${encodeURIComponent(JSON.stringify(payload))}`;
-
       try {
-        await fetchJSONP(apiUrl);
+        await postData(payload);
         alert('儲存成功！已寫入 Google 試算表。');
         closeModal();
-        syncCloudRestaurants();
+        setTimeout(syncCloudRestaurants, 1500);
       } catch (e) {
         alert('同步失敗，請再試一次');
       } finally {
@@ -439,11 +456,11 @@
       if (!confirm(`確定要刪除「${target.name}」嗎？`)) return;
 
       try {
-        await fetchJSONP(`${SCRIPT_URL}?action=deleteRestaurant&name=${encodeURIComponent(target.name)}`);
+        await postData({ action: "deleteRestaurant", name: target.name });
         alert('已成功刪除！');
-        syncCloudRestaurants();
+        setTimeout(syncCloudRestaurants, 1500);
       } catch (e) {
-        alert('刪除失敗，請再試一次');
+        alert('刪除失敗');
       }
     }
 
@@ -473,9 +490,35 @@
       document.getElementById('order-section').classList.add('hidden');
     }
 
-    function startGroupOrder() {
+    async function startGroupOrder() {
       document.getElementById('order-section').classList.remove('hidden');
+      loadQuickMenuItems();
       fetchSheetOrders();
+    }
+
+    // 載入餐廳快速點餐選項
+    async function loadQuickMenuItems() {
+      const box = document.getElementById('quick-menu-box');
+      const container = document.getElementById('quick-menu-items');
+      box.classList.add('hidden');
+      container.innerHTML = '';
+
+      try {
+        const menuData = await fetchJSONP(`${SCRIPT_URL}?action=getMenu&restaurant=${encodeURIComponent(currentRestaurant)}`);
+        if (Array.isArray(menuData) && menuData.length > 0) {
+          container.innerHTML = menuData.map(m => `
+            <button onclick="pickQuickMenuItem('${m.item}', '${m.price}')" class="bg-amber-50 border border-amber-200 text-amber-800 text-xs px-2.5 py-1 rounded-lg font-medium hover:bg-amber-100">
+              ${m.item} <span class="font-bold text-amber-600">$${m.price}</span>
+            </button>
+          `).join('');
+          box.classList.remove('hidden');
+        }
+      } catch (e) {}
+    }
+
+    function pickQuickMenuItem(item, price) {
+      document.getElementById('ord-item').value = item;
+      document.getElementById('ord-price').value = price;
     }
 
     async function submitOrder() {
@@ -490,11 +533,17 @@
       btnSubmit.innerText = "⏳ 傳送中...";
 
       try {
-        await fetchJSONP(`${SCRIPT_URL}?action=addOrder&restaurant=${encodeURIComponent(currentRestaurant)}&user=${encodeURIComponent(user)}&item=${encodeURIComponent(item)}&price=${encodeURIComponent(price)}`);
-        alert('餐點已傳送並寫入試算表！');
+        await postData({
+          action: "addOrder",
+          restaurant: currentRestaurant,
+          user: user,
+          item: item,
+          price: price
+        });
         document.getElementById('ord-item').value = '';
         document.getElementById('ord-price').value = '';
-        fetchSheetOrders();
+        alert('已傳送餐點並同步雲端！');
+        setTimeout(fetchSheetOrders, 1200);
       } catch (e) {
         alert('同步失敗：' + e.message);
       } finally {
@@ -508,17 +557,49 @@
       try {
         const data = await fetchJSONP(`${SCRIPT_URL}?action=getOrders&restaurant=${encodeURIComponent(currentRestaurant)}`);
         if (Array.isArray(data) && data.length > 0) {
-          container.innerHTML = data.map(o => `
+          currentOrders = data;
+          container.innerHTML = data.map((o) => `
             <div class="bg-white p-2.5 rounded-xl flex justify-between items-center shadow-sm border border-slate-100">
               <span class="font-bold text-slate-700">${o.user}</span>
               <span class="text-slate-600 text-xs">${o.item}</span>
-              <span class="font-bold text-amber-600">$${o.price}</span>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-amber-600">$${o.price}</span>
+                <button onclick="deleteSingleOrder('${o.user}', '${o.item}')" title="刪除此筆" class="text-slate-300 hover:text-rose-500 text-xs"><i class="fa-solid fa-xmark"></i></button>
+              </div>
             </div>
           `).join('');
         } else {
+          currentOrders = [];
           container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">目前尚無人點餐</p>';
         }
       } catch (e) {}
+    }
+
+    async function deleteSingleOrder(user, item) {
+      if (!confirm(`確定要刪除「${user}」點的「${item}」嗎？`)) return;
+      try {
+        await postData({ action: "deleteOrder", restaurant: currentRestaurant, user: user, item: item });
+        setTimeout(fetchSheetOrders, 1200);
+      } catch (e) {}
+    }
+
+    // 複製 LINE 文字總結
+    function copyLineSummary() {
+      if (!currentOrders || currentOrders.length === 0) return alert('目前尚無點餐資料！');
+      
+      let total = 0;
+      let text = `📢 【${currentRestaurant}】點餐統計明細：\n-------------------------\n`;
+      currentOrders.forEach(o => {
+        text += `• ${o.user}：${o.item} ($${o.price})\n`;
+        total += Number(o.price || 0);
+      });
+      text += `-------------------------\n💰 總金額：$${total} 元\n點餐完成！請再確認～`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert('已複製 LINE 點餐統計明細！可以直接貼到 LINE 群組發送。');
+      }).catch(() => {
+        prompt('請複製以下明細貼至 LINE：', text);
+      });
     }
   </script>
 </body>
