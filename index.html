@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>等等吃什麼 - 雲端同步點餐</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- FontAwesome 圖示 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen pb-12">
+  <div id="app" class="max-w-md mx-auto p-4">
+    <!-- Header -->
+    <header class="text-center my-4">
+      <h1 class="text-3xl font-black text-amber-500 flex items-center justify-center gap-2">
+        <i class="fa-solid fa-utensils"></i> 等等吃什麼
+      </h1>
+      <p class="text-xs text-slate-500 mt-1">跨手機 LINE 即時同步點餐算錢</p>
+    </header>
+
+    <!-- 分頁切換 Tab -->
+    <div class="flex bg-slate-200 p-1 rounded-xl mb-6">
+      <button @click="currentTab = 'picker'" :class="{'bg-white shadow-sm font-bold text-amber-600': currentTab === 'picker'}" class="flex-1 py-2 text-sm rounded-lg transition-all">
+        <i class="fa-solid fa-dice"></i> 亂數決策
+      </button>
+      <button @click="currentTab = 'catalog'" :class="{'bg-white shadow-sm font-bold text-amber-600': currentTab === 'catalog'}" class="flex-1 py-2 text-sm rounded-lg transition-all">
+        <i class="fa-solid fa-book-open"></i> 菜單型錄
+      </button>
+      <button @click="currentTab = 'categories'" :class="{'bg-white shadow-sm font-bold text-amber-600': currentTab === 'categories'}" class="flex-1 py-2 text-sm rounded-lg transition-all">
+        <i class="fa-solid fa-gear"></i> 設定
+      </button>
+    </div>
+
+    <!-- 1. 亂數決策 & 點餐 (Picker) -->
+    <section v-if="currentTab === 'picker'" class="space-y-4">
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">步驟 1：依標題分類過濾（可複選）</label>
+        <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
+          <button 
+            v-for="cat in categories" 
+            :key="cat"
+            @click="toggleFilterCategory(cat)"
+            :class="selectedFilterCategories.includes(cat) ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'"
+            class="px-2.5 py-1 rounded-full border text-xs font-medium transition-all"
+          >
+            # {{ cat }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 骰子按鈕區 -->
+      <div class="grid grid-cols-2 gap-3">
+        <button 
+          @click="pickRandom(true)" 
+          class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-bold py-4 px-3 rounded-2xl shadow-lg shadow-amber-200 transition-all flex flex-col items-center justify-center gap-1"
+        >
+          <i class="fa-solid fa-filter text-xl"></i>
+          <span>依分類抽籤</span>
+        </button>
+        <button 
+          @click="pickRandom(false)" 
+          class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-4 px-3 rounded-2xl shadow-lg shadow-indigo-200 transition-all flex flex-col items-center justify-center gap-1"
+        >
+          <i class="fa-solid fa-shuffle text-xl"></i>
+          <span>直接隨機大盲盒</span>
+        </button>
+      </div>
+
+      <!-- 抽籤結果顯示卡片 -->
+      <div v-if="pickedRestaurant" class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 shadow-sm text-center relative overflow-hidden mt-6">
+        <div class="absolute top-0 right-0 bg-amber-400 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">今日首選</div>
+        <div class="text-xs font-bold text-amber-600 mb-1">決定就是這家了！</div>
+        <h3 class="text-2xl font-black text-slate-800 mb-1">{{ pickedRestaurant.name }}</h3>
+        
+        <p v-if="pickedRestaurant.rating" class="text-xs text-amber-600 font-bold mb-2">
+          <i class="fa-solid fa-star text-amber-400"></i> {{ pickedRestaurant.rating }}
+        </p>
+        
+        <div class="flex flex-wrap justify-center gap-1 mb-3">
+          <span v-for="tag in pickedRestaurant.tags" :key="tag" class="bg-amber-200 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-semibold">
+            #{{ tag }}
+          </span>
+        </div>
+
+        <div class="text-sm text-slate-600 space-y-2 bg-white/70 p-3 rounded-xl text-left mb-4">
+          <p v-if="pickedRestaurant.phone"><i class="fa-solid fa-phone text-amber-500 w-5"></i> 電話：{{ pickedRestaurant.phone }}</p>
+          <p v-if="pickedRestaurant.price"><i class="fa-solid fa-coins text-amber-500 w-5"></i> 均消/價格：NT$ {{ pickedRestaurant.price }}</p>
+          <p v-if="pickedRestaurant.address"><i class="fa-solid fa-location-dot text-amber-500 w-5"></i> 地址：{{ pickedRestaurant.address }}</p>
+          <p v-if="pickedRestaurant.menu"><i class="fa-solid fa-utensils text-amber-500 w-5"></i> 菜單備註：{{ pickedRestaurant.menu }}</p>
+          
+          <div v-if="pickedRestaurant.image" class="mt-2">
+            <p class="text-xs font-bold text-slate-500 mb-1"><i class="fa-solid fa-image text-amber-500 w-5"></i> 菜單照片：</p>
+            <img :src="pickedRestaurant.image" @click="previewImage = pickedRestaurant.image" class="w-full h-32 object-cover rounded-lg border cursor-pointer hover:opacity-90">
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <a 
+            v-if="pickedRestaurant.mapUrl" 
+            :href="pickedRestaurant.mapUrl" 
+            target="_blank" 
+            class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
+          >
+            <i class="fa-solid fa-map-location-dot"></i> 開啟 Google 地圖導航
+          </a>
+          <button @click="pickRandom(selectedFilterCategories.length > 0)" class="text-xs text-amber-700 underline hover:text-amber-900 block mx-auto pt-1">
+            不喜歡？再抽一次
+          </button>
+        </div>
+
+        <!-- 開啟團購點餐按鈕 -->
+        <div class="mt-4 pt-3 border-t border-amber-200">
+          <button @click="startOrderSection" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm shadow-md flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cart-plus"></i> 大家一起線上同步點餐 (開團)
+          </button>
+        </div>
+      </div>
+
+      <!-- 雲端跨手機同步點餐區 -->
+      <div v-if="currentOrderRestaurant" class="bg-white rounded-2xl p-5 shadow-lg border border-slate-200 space-y-4 mt-6">
+        <div class="flex justify-between items-center border-b pb-3">
+          <div>
+            <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              <span class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span> 雲端連線同步中
+            </span>
+            <h3 class="text-xl font-bold text-slate-800 mt-1">{{ currentOrderRestaurant.name }}</h3>
+          </div>
+          <div class="flex gap-2">
+            <button @click="fetchCloudOrders" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">
+              <i class="fa-solid fa-rotate" :class="{'fa-spin': isLoading}"></i> 刷新
+            </button>
+          </div>
+        </div>
+
+        <!-- 新增個人餐點表單 -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+          <h4 class="font-bold text-xs text-slate-700 flex items-center gap-1">
+            <i class="fa-solid fa-user-plus text-amber-500"></i> 新增個人餐點
+          </h4>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">人物名稱/代號 *</label>
+              <input v-model="orderForm.userName" type="text" placeholder="例：柏成" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">餐點品項 *</label>
+              <input v-model="orderForm.itemName" type="text" placeholder="例：炸雞腿" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">數量</label>
+              <input v-model.number="orderForm.count" type="number" min="1" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">單價 (元)</label>
+              <input v-model.number="orderForm.price" type="number" min="0" placeholder="50" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-1">備註 (辣度/冰塊)</label>
+              <input v-model="orderForm.note" type="text" placeholder="例：辣" class="w-full bg-white border rounded-lg p-2 focus:outline-none focus:border-amber-500">
+            </div>
+          </div>
+
+          <button @click="addOrderItem" :disabled="isLoading" class="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold py-2.5 rounded-lg text-xs shadow flex items-center justify-center gap-1">
+            <i class="fa-solid fa-cloud-arrow-up"></i> 傳送餐點並同步雲端
+          </button>
+        </div>
+
+        <!-- 點餐明細清單 -->
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="font-bold text-xs text-slate-700">所有人點餐明細：</h4>
+            <button @click="clearCloudOrders" class="text-[10px] text-rose-500 hover:underline">清空全團資料</button>
+          </div>
+          
+          <div v-if="orderItems.length === 0" class="text-center py-6 text-xs text-slate-400 bg-slate-50 rounded-xl">
+            目前還沒有人點餐，快填寫上方表單點餐！
+          </div>
+
+          <div class="space-y-2">
+            <div v-for="(item, index) in orderItems" :key="index" class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
+              <div>
+                <span class="font-bold text-amber-700">{{ item.userName }}</span> - 
+                <span class="font-bold text-slate-800">{{ item.itemName }}</span> * {{ item.count }}
+                <span v-if="item.note" class="text-slate-500">({{ item.note }})</span>
+                <div class="text-[10px] text-slate-400">小計: NT$ {{ (item.price || 0) * item.count }} (單價 ${{ item.price || 0 }})</div>
+              </div>
+              <div class="text-right font-bold text-slate-700">
+                NT$ {{ (item.price || 0) * item.count }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 統計與累積總額 (直接可複製成 LINE 文字) -->
+        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-xs space-y-3">
+          <div class="font-bold text-indigo-900 border-b border-indigo-200 pb-1 flex justify-between">
+            <span><i class="fa-solid fa-calculator"></i> 全團總計數量與匯總：</span>
+            <span>共 {{ totalItemCount }} 份餐點</span>
+          </div>
+          
+          <ul class="space-y-1 text-indigo-800">
+            <li v-for="(stat, name) in itemSummary" :key="name" class="flex justify-between">
+              <span>• {{ stat.count }}x {{ name }}</span>
+              <span class="text-indigo-600 font-semibold">NT$ {{ stat.totalPrice }}</span>
+            </li>
+          </ul>
+
+          <div class="border-t border-indigo-200 pt-2 flex justify-between items-center text-sm font-black text-indigo-950">
+            <span>累積總金額：</span>
+            <span class="text-lg text-amber-600">NT$ {{ totalAmount }}</span>
+          </div>
+
+          <button @click="copyLineFormatText" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-lg text-xs shadow flex items-center justify-center gap-1">
+            <i class="fa-solid fa-copy"></i> 一鍵複製 LINE 點餐懶人包
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 菜單型錄 (Catalog) -->
+    <section v-if="currentTab === 'catalog'" class="space-y-4">
+      <button @click="showAddModal = true" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md">
+        <i class="fa-solid fa-plus"></i> 新增餐廳 / 貼上 Google 地圖
+      </button>
+
+      <div class="space-y-3">
+        <div v-for="res in restaurants" :key="res.id" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative">
+          <button @click="deleteRestaurant(res.id)" class="absolute top-4 right-4 text-slate-300 hover:text-rose-500 text-xs p-1">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+          
+          <h4 class="font-bold text-slate-800 text-lg mb-1 pr-6 flex items-center gap-2">
+            {{ res.name }}
+            <span v-if="res.rating" class="text-xs text-amber-500 font-bold"><i class="fa-solid fa-star"></i> {{ res.rating }}</span>
+          </h4>
+          
+          <div class="flex flex-wrap gap-1 mb-2">
+            <span v-for="tag in res.tags" :key="tag" class="bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-md font-medium">
+              # {{ tag }}
+            </span>
+          </div>
+
+          <div class="text-xs text-slate-500 space-y-1.5 mt-2 border-t pt-2 border-slate-50">
+            <p v-if="res.phone"><span class="font-semibold text-slate-700">電話：</span>{{ res.phone }}</p>
+            <p v-if="res.price"><span class="font-semibold text-slate-700">價格：</span>NT$ {{ res.price }}</p>
+            <p v-if="res.address"><span class="font-semibold text-slate-700">地址：</span>{{ res.address }}</p>
+            <p v-if="res.menu"><span class="font-semibold text-slate-700">菜單/備註：</span>{{ res.menu }}</p>
+            
+            <div class="flex items-center justify-between pt-2">
+              <a v-if="res.mapUrl" :href="res.mapUrl" target="_blank" class="inline-flex items-center gap-1 text-emerald-600 text-xs font-bold hover:underline">
+                <i class="fa-solid fa-map-location-dot"></i> 打開 Google 地圖
+              </a>
+              <button @click="startOrderFromCatalog(res)" class="text-amber-600 font-bold text-xs hover:underline flex items-center gap-1">
+                <i class="fa-solid fa-cart-plus"></i> 直接開團點餐
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 設定與 API 連接 (Categories/Settings) -->
+    <section v-if="currentTab === 'categories'" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">
+      <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+        <h3 class="font-bold text-amber-800 text-xs mb-1"><i class="fa-solid fa-cloud"></i> Google 試算表雲端同步網址 (Web App URL)</h3>
+        <input 
+          v-model="scriptUrl" 
+          type="text" 
+          placeholder="貼上 Google Apps Script 部署後的 Web App URL..." 
+          class="w-full bg-white border text-xs rounded-lg p-2 focus:outline-none focus:border-amber-500 mt-1"
+        />
+        <p class="text-[10px] text-slate-500 mt-1">將此網址貼上後，全團人在 LINE 開啟本網頁時就能即時連線同步！</p>
+      </div>
+
+      <h3 class="font-bold text-slate-800 text-sm pt-2">食物標題分類管理</h3>
+      <div class="flex gap-2">
+        <input 
+          v-model="newCategoryInput" 
+          type="text" 
+          placeholder="輸入分類標籤..." 
+          class="flex-1 bg-slate-50 border text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
+          @keyup.enter="addCategory"
+        />
+        <button @click="addCategory" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs">
+          新增
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pt-2">
+        <div v-for="cat in categories" :key="cat" class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-xl flex items-center gap-1.5">
+          <span># {{ cat }}</span>
+          <button @click="removeCategory(cat)" class="text-slate-400 hover:text-rose-500"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 新增餐廳 Modal 彈窗 -->
+    <div v-if="showAddModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-3 shadow-xl my-8">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="font-bold text-slate-800">建立新菜單 / 餐廳</h3>
+          <button @click="showAddModal = false" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-2">
+            <label class="block font-bold text-amber-800"><i class="fa-solid fa-bolt"></i> 貼上地圖分享文字或網址</label>
+            <div class="flex gap-1.5">
+              <textarea v-model="mapInput" rows="2" placeholder="貼上地圖分享文字 (如: 家味小館 https://maps.app.goo.gl/...)" class="flex-1 bg-white border rounded-lg p-2 text-xs focus:outline-none resize-none"></textarea>
+              <button @click="parseMapData" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg text-xs whitespace-nowrap">解析帶入</button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">餐廳名稱 *</label>
+            <input v-model="newRes.name" type="text" placeholder="例：家味小館" class="w-full bg-slate-50 border rounded-xl p-2.5">
+          </div>
+
+          <div>
+            <label class="block font-bold text-slate-600 mb-1">電話號碼</label>
+            <input v-model="newRes.phone" type="text" placeholder="例：04-22345678" class="w-full bg-slate-50 border rounded-xl p-2.5">
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2 border-t">
+          <button @click="showAddModal = false" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-xl text-xs">取消</button>
+          <button @click="saveRestaurant" class="flex-1 bg-amber-500 text-white font-bold py-2.5 rounded-xl text-xs">儲存餐廳</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+
+    createApp({
+      setup() {
+        const currentTab = ref('picker');
+        const showAddModal = ref(false);
+        const isLoading = ref(false);
+
+        // 您在 Google Apps Script 取得的網址可以預設貼在下面：
+        const scriptUrl = ref(localStorage.getItem('eat_script_url') || '');
+
+        const categories = ref(['台式小吃', '便當', '平價', '速食', '滷味', '飲料']);
+        const restaurants = ref([
+          { id: 1, name: '家味小館', tags: ['台式小吃', '便當'], phone: '04-22345678', price: '100-200', rating: '3.8' }
+        ]);
+
+        const selectedFilterCategories = ref([]);
+        const pickedRestaurant = ref(null);
+        const currentOrderRestaurant = ref(null);
+
+        const newCategoryInput = ref('');
+        const mapInput = ref('');
+        const newRes = ref({ name: '', phone: '', tags: [], price: '', rating: '', address: '', menu: '', mapUrl: '' });
+
+        const orderItems = ref([]);
+        const orderForm = ref({ userName: '柏成', itemName: '', count: 1, price: null, note: '' });
+
+        onMounted(() => {
+          if (scriptUrl.value) fetchCloudOrders();
+        });
+
+        watch(scriptUrl, (newVal) => {
+          localStorage.setItem('eat_script_url', newVal);
+        });
+
+        // 從雲端 Google 試算表抓取最新資料
+        const fetchCloudOrders = async () => {
+          if (!scriptUrl.value) return;
+          isLoading.value = true;
+          try {
+            const res = await fetch(`${scriptUrl.value}?action=get`);
+            const data = await res.json();
+            orderItems.value = data;
+          } catch (e) {
+            console.error(e);
+          } finally {
+            isLoading.value = false;
+          }
+        };
+
+        // 傳送點餐資料至雲端 Google 試算表
+        const addOrderItem = async () => {
+          if (!orderForm.value.userName.trim()) return alert('請輸入人物名稱/代號！');
+          if (!orderForm.value.itemName.trim()) return alert('請輸入餐點品項！');
+
+          const payload = {
+            action: 'add',
+            userName: orderForm.value.userName.trim(),
+            itemName: orderForm.value.itemName.trim(),
+            count: orderForm.value.count || 1,
+            price: orderForm.value.price || 0,
+            note: orderForm.value.note.trim()
+          };
+
+          if (scriptUrl.value) {
+            isLoading.value = true;
+            try {
+              await fetch(scriptUrl.value, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              setTimeout(fetchCloudOrders, 1000); // 延遲刷新取得最新清單
+            } catch (e) {
+              alert('上傳失敗');
+            } finally {
+              isLoading.value = false;
+            }
+          } else {
+            // 無雲端時備用本地模式
+            orderItems.value.push(payload);
+          }
+
+          orderForm.value.itemName = '';
+          orderForm.value.count = 1;
+          orderForm.value.price = null;
+          orderForm.value.note = '';
+        };
+
+        const clearCloudOrders = async () => {
+          if (!confirm('確定要清空雲端的所有點餐記錄嗎？')) return;
+          if (scriptUrl.value) {
+            isLoading.value = true;
+            await fetch(scriptUrl.value, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'clear' })
+            });
+            setTimeout(fetchCloudOrders, 1000);
+          } else {
+            orderItems.value = [];
+          }
+        };
+
+        // 一鍵複製成適合在 LINE 群組發送的格式
+        const copyLineFormatText = () => {
+          let text = `【${currentOrderRestaurant.value?.name || '團購點餐'} 明細】\n\n`;
+          orderItems.value.forEach(item => {
+            let noteStr = item.note ? `(${item.note})` : '';
+            let priceStr = item.price ? ` - $${item.price * item.count}` : '';
+            text += `${item.userName}-${item.itemName}*${item.count}${noteStr}${priceStr}\n`;
+          });
+
+          text += `\n--------------------\n目前總計數量：\n`;
+          Object.keys(itemSummary.value).forEach(key => {
+            text += `• ${itemSummary.value[key].count}x ${key}\n`;
+          });
+          text += `\n累積金額：NT$ ${totalAmount.value}`;
+
+          navigator.clipboard.writeText(text);
+          alert('已複製 LINE 點餐懶人包，可以直接貼到 LINE 群組對話！');
+        };
+
+        const totalAmount = computed(() => orderItems.value.reduce((sum, item) => sum + ((item.price || 0) * item.count), 0));
+        const totalItemCount = computed(() => orderItems.value.reduce((sum, item) => sum + item.count, 0));
+
+        const itemSummary = computed(() => {
+          const summary = {};
+          orderItems.value.forEach(item => {
+            const key = item.note ? `${item.itemName} (${item.note})` : item.itemName;
+            if (!summary[key]) summary[key] = { count: 0, totalPrice: 0 };
+            summary[key].count += item.count;
+            summary[key].totalPrice += (item.price || 0) * item.count;
+          });
+          return summary;
+        });
+
+        const startOrderSection = () => {
+          currentOrderRestaurant.value = pickedRestaurant.value;
+          if (scriptUrl.value) fetchCloudOrders();
+        };
+
+        const startOrderFromCatalog = (res) => {
+          currentTab.value = 'picker';
+          pickedRestaurant.value = res;
+          currentOrderRestaurant.value = res;
+          if (scriptUrl.value) fetchCloudOrders();
+        };
+
+        const pickRandom = (useFilter) => {
+          let pool = restaurants.value;
+          if (useFilter && selectedFilterCategories.value.length > 0) {
+            pool = pool.filter(res => res.tags.some(tag => selectedFilterCategories.value.includes(tag)));
+          }
+          if (pool.length > 0) {
+            pickedRestaurant.value = pool[Math.floor(Math.random() * pool.length)];
+          }
+        };
+
+        return {
+          currentTab, showAddModal, isLoading, scriptUrl, categories, restaurants,
+          selectedFilterCategories, pickedRestaurant, currentOrderRestaurant, newCategoryInput,
+          mapInput, newRes, orderItems, orderForm, totalAmount, totalItemCount, itemSummary,
+          fetchCloudOrders, addOrderItem, clearCloudOrders, copyLineFormatText,
+          startOrderSection, startOrderFromCatalog, pickRandom
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
