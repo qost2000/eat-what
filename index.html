@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>等等吃什麼 - 終極修復版</title>
+  <title>等等吃什麼 - 雲端同步版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -68,7 +68,7 @@
       </button>
     </div>
 
-    <!-- 點餐專區 -->
+    <!-- 點餐明細專區 -->
     <div id="order-section" class="hidden space-y-3 bg-slate-100 p-4 rounded-2xl border border-slate-200">
       <div class="flex justify-between items-center border-b pb-2">
         <h3 class="font-bold text-slate-700 text-sm">🛒 當前點餐明細</h3>
@@ -206,7 +206,6 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
-    // 真正的萬無一失 JSONP 通訊引擎
     function requestJSONP(url) {
       return new Promise((resolve, reject) => {
         const cbName = 'cb_' + Math.random().toString(36).substring(2);
@@ -221,7 +220,7 @@
         script.onerror = function() {
           delete window[cbName];
           if (script.parentNode) document.body.removeChild(script);
-          reject(new Error("網路請求失敗，請檢查 Apps Script 權限"));
+          reject(new Error("網路回應超時"));
         };
 
         const delimiter = url.includes('?') ? '&' : '?';
@@ -240,7 +239,7 @@
           restaurants = cloudData;
         }
       } catch (e) {
-        alert("雲端連線失敗！請確定 Google Apps Script 存取權限已改為「所有人 (Anyone)」。");
+        console.warn("無法即時連線，顯示快取資料");
       } finally {
         if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>讀取雲端';
         renderMenu();
@@ -437,11 +436,11 @@
 
       try {
         await requestJSONP(apiUrl);
-        alert('儲存成功！已成功寫入 Google 試算表。');
+        alert('儲存成功！已寫入 Google 試算表。');
         closeModal();
         syncCloudRestaurants();
       } catch (e) {
-        alert('同步失敗：' + e.message);
+        alert('儲存失敗：' + e.message);
       } finally {
         btnSave.disabled = false;
         btnSave.innerText = "儲存並同步試算表";
