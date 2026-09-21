@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>等等吃什麼 - 雲端同步選單版</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>等等吃什麼 - 雲端即時同步版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -13,6 +16,7 @@
 </head>
 <body class="p-4 max-w-md mx-auto text-slate-800 pb-12">
 
+  <!-- Header -->
   <header class="text-center my-4">
     <h1 class="text-3xl font-extrabold text-amber-500 flex items-center justify-center gap-2">
       🍴 等等吃什麼
@@ -20,6 +24,7 @@
     <p class="text-xs text-slate-400 mt-1">跨手機 LINE 即時同步點餐算錢</p>
   </header>
 
+  <!-- Navigation -->
   <nav class="flex justify-around bg-slate-200/60 p-1.5 rounded-2xl mb-5 text-sm text-slate-600">
     <button id="tab-random" onclick="switchTab('random')" class="flex-1 py-2.5 text-center rounded-xl active-tab transition-all">
       <i class="fa-solid fa-dice mr-1 text-amber-500"></i>亂數決策
@@ -97,11 +102,8 @@
     <div class="flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
       <span class="text-xs font-bold text-slate-500">雲端餐廳資料庫</span>
       <div class="flex gap-2">
-        <button onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-2.5 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
+        <button id="btn-sync" onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
           <i class="fa-solid fa-rotate mr-1"></i>讀取雲端
-        </button>
-        <button onclick="initDefaultDataToCloud()" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1.5 rounded-xl font-bold hover:bg-indigo-100">
-          ⚡ 初始資料寫入雲端
         </button>
       </div>
     </div>
@@ -118,9 +120,9 @@
       <h4 class="text-xs font-bold text-slate-700 border-b pb-1.5">☁️ 雲端資料庫狀態</h4>
       <p class="text-xs text-slate-500 leading-relaxed">
         ✅ 系統已成功連結您的 Google 試算表！<br>
-        • 餐廳基本資料會寫入 <b>Restaurants</b> 工作表<br>
-        • 餐點與價格會寫入 <b>Menu</b> 工作表<br>
-        • 線上點餐紀錄會寫入 <b>Orders</b> 工作表
+        • 餐廳基本資料寫入 <b>Restaurants</b> 工作表<br>
+        • 餐點與價格寫入 <b>Menu</b> 工作表<br>
+        • 線上點餐紀錄寫入 <b>Orders</b> 工作表
       </p>
     </div>
   </main>
@@ -145,7 +147,6 @@
       <input id="m-phone" type="text" placeholder="電話 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
       <input id="m-address" type="text" placeholder="地址 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
       
-      <!-- 選單選擇類別標籤區 -->
       <div class="space-y-1">
         <label class="text-xs font-bold text-slate-600 block">🏷️ 選擇分類標籤（可複選）：</label>
         <div id="modal-tag-options" class="flex flex-wrap gap-1.5 bg-slate-50 p-2.5 rounded-xl border"></div>
@@ -157,7 +158,6 @@
 
       <textarea id="m-note" placeholder="備註說明 (選填)" class="w-full text-xs p-2.5 border rounded-xl h-16 focus:outline-none"></textarea>
 
-      <!-- 餐點與價格明細區 -->
       <div class="border-t pt-2 space-y-2">
         <label class="text-xs font-bold text-slate-600 block">🍽️ 菜單品項與價格 (選填)</label>
         <div id="menu-items-container" class="space-y-1.5">
@@ -179,15 +179,25 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
 
-    const DEFAULT_CATEGORY_TAGS = ["台式小吃", "麵食/飯類", "日式料理", "美式/速食", "火鍋", "咖啡/甜點/飲料", "便當", "炸雞", "燒烤/居酒屋", "泰式/東南亞", "素食/蔬食"];
+    const DEFAULT_CATEGORY_TAGS = ["台式小吃", "麵食/飯類", "日式料理", "美式/速食", "火鍋", "咖啡/甜點/飲料", "便當", "炸雞", "燒烤/居酒屋"];
+    const DEFAULT_RESTAURANTS = [
+      { name: "家味小館", phone: "04-22345678", address: "台中市西區...", tags: ["台式小吃", "便當"], note: "招牌排骨飯" },
+      { name: "喵喵鯛魚燒", phone: "0958624479", address: "", tags: ["咖啡/甜點/飲料"], note: "" },
+      { name: "正騰和脆皮炸雞-永興店", phone: "0980010450", address: "40454臺南市北區建築里永興街41號", tags: ["美式/速食", "炸雞"], note: "" },
+      { name: "蘋果手雞 - 炸雞專家", phone: "", address: "", tags: ["美式/速食", "炸雞"], note: "" }
+    ];
 
-    let restaurants = [];
+    let restaurants = JSON.parse(localStorage.getItem('restaurants')) || DEFAULT_RESTAURANTS;
     let activeTags = [];
     let modalSelectedTags = [];
     let customCategoryTags = JSON.parse(localStorage.getItem('custom_category_tags')) || DEFAULT_CATEGORY_TAGS;
     let currentRestaurant = "";
 
     document.addEventListener("DOMContentLoaded", () => {
+      // 先用預設/快取資料渲染頁面，避免出現空白
+      renderMenu();
+      renderTags();
+      // 隨後自動從雲端同步最新內容
       syncCloudRestaurants();
     });
 
@@ -201,20 +211,28 @@
     }
 
     async function syncCloudRestaurants() {
+      const btnSync = document.getElementById('btn-sync');
+      if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>讀取中...';
+
       try {
         const res = await fetch(`${SCRIPT_URL}?action=getRestaurants&t=${Date.now()}`);
         const cloudData = await res.json();
-        if (cloudData && cloudData.length > 0) {
+        if (Array.isArray(cloudData) && cloudData.length > 0) {
           restaurants = cloudData;
+          localStorage.setItem('restaurants', JSON.stringify(restaurants));
         }
-      } catch (e) {}
-      renderMenu();
-      renderTags();
+      } catch (e) {
+        console.warn('雲端讀取失敗，使用本機快取資料', e);
+      } finally {
+        if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>讀取雲端';
+        renderMenu();
+        renderTags();
+      }
     }
 
     function renderMenu() {
       const container = document.getElementById('restaurant-list');
-      if (restaurants.length === 0) {
+      if (!restaurants || restaurants.length === 0) {
         container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">目前無餐廳，請點選上方按鈕新增！</p>';
         return;
       }
@@ -249,7 +267,6 @@
 
     function clearTagFilters() { activeTags = []; renderTags(); }
 
-    /* 彈出視窗標籤選項渲染 */
     function renderModalTagOptions() {
       const container = document.getElementById('modal-tag-options');
       const allTags = [...new Set([...customCategoryTags, ...restaurants.flatMap(r => r.tags || [])])];
@@ -340,6 +357,7 @@
       };
 
       restaurants.push(obj);
+      localStorage.setItem('restaurants', JSON.stringify(restaurants));
       closeModal();
       renderMenu();
       renderTags();
@@ -351,7 +369,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(obj)
         });
-        alert('成功新增店家與菜單！已同步寫入 Google 試算表。');
+        alert('成功新增店家！已同步寫入 Google 試算表。');
       } catch (e) {}
     }
 
@@ -360,6 +378,7 @@
       if (!confirm(`確定要刪除「${target.name}」嗎？`)) return;
 
       restaurants.splice(i, 1);
+      localStorage.setItem('restaurants', JSON.stringify(restaurants));
       renderMenu();
 
       try {
@@ -429,7 +448,7 @@
     async function fetchSheetOrders() {
       const container = document.getElementById('order-list');
       try {
-        const res = await fetch(`${SCRIPT_URL}?restaurant=${encodeURIComponent(currentRestaurant)}&t=${Date.now()}`);
+        const res = await fetch(`${SCRIPT_URL}?action=getOrders&restaurant=${encodeURIComponent(currentRestaurant)}&t=${Date.now()}`);
         const data = await res.json();
         if (data && data.length > 0) {
           container.innerHTML = data.map(o => `
