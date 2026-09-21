@@ -208,17 +208,23 @@
 
     <!-- 2. 菜單型錄 (Catalog) -->
     <section v-if="currentTab === 'catalog'" class="space-y-4">
-      <button @click="openAddModal" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md">
+      <button @click="openAddModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md">
         <i class="fa-solid fa-plus"></i> 新增餐廳 / 貼上 Google 地圖
       </button>
 
       <div class="space-y-3">
         <div v-for="res in restaurants" :key="res.id" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative">
-          <button @click="deleteRestaurant(res.id)" class="absolute top-4 right-4 text-slate-300 hover:text-rose-500 text-xs p-1">
-            <i class="fa-solid fa-trash"></i>
-          </button>
+          <!-- 操作按鈕區 (編輯 & 刪除) -->
+          <div class="absolute top-4 right-4 flex items-center gap-2">
+            <button @click="openEditModal(res)" class="text-slate-400 hover:text-amber-500 text-xs p-1">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button @click="deleteRestaurant(res.id)" class="text-slate-300 hover:text-rose-500 text-xs p-1">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
           
-          <h4 class="font-bold text-slate-800 text-lg mb-1 pr-6 flex items-center gap-2">
+          <h4 class="font-bold text-slate-800 text-lg mb-1 pr-12 flex items-center gap-2">
             {{ res.name }}
             <span v-if="res.rating" class="text-xs text-amber-500 font-bold"><i class="fa-solid fa-star"></i> {{ res.rating }}</span>
           </h4>
@@ -282,17 +288,17 @@
       </div>
     </section>
 
-    <!-- 新增餐廳 Modal 彈窗 (超強完整版) -->
+    <!-- 新增 / 編輯餐廳 Modal 彈窗 -->
     <div v-if="showAddModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
       <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-3 shadow-xl my-8 max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center border-b pb-2">
-          <h3 class="font-bold text-slate-800">建立新菜單 / 餐廳</h3>
+          <h3 class="font-bold text-slate-800">{{ isEditing ? '修改餐廳資料' : '建立新菜單 / 餐廳' }}</h3>
           <button @click="showAddModal = false" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
         <div class="space-y-3 text-xs">
-          <!-- 快捷貼上 Google 地圖區 -->
-          <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-2">
+          <!-- 快捷貼上 Google 地圖區 (新增時才顯示) -->
+          <div v-if="!isEditing" class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-2">
             <label class="block font-bold text-amber-800"><i class="fa-solid fa-bolt"></i> 貼上 Google 地圖分享文字/網址</label>
             <div class="flex gap-1.5">
               <input v-model="mapInput" type="text" placeholder="直接貼上文字或網址..." class="flex-1 bg-white border rounded-lg p-2 text-xs focus:outline-none">
@@ -356,7 +362,9 @@
 
         <div class="flex gap-2 pt-2 border-t">
           <button @click="showAddModal = false" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-xl text-xs">取消</button>
-          <button @click="saveRestaurant" class="flex-1 bg-amber-500 text-white font-bold py-2.5 rounded-xl text-xs">儲存餐廳</button>
+          <button @click="saveRestaurant" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs">
+            {{ isEditing ? '儲存修改' : '儲存餐廳' }}
+          </button>
         </div>
       </div>
     </div>
@@ -369,6 +377,8 @@
       setup() {
         const currentTab = ref('picker');
         const showAddModal = ref(false);
+        const isEditing = ref(false);
+        const editingId = ref(null);
         const isLoading = ref(false);
 
         // 雲端 Apps Script 網址
@@ -422,9 +432,20 @@
           categories.value = categories.value.filter(c => c !== cat);
         };
 
+        // 開啟新增彈窗
         const openAddModal = () => {
+          isEditing.value = false;
+          editingId.value = null;
           newRes.value = { name: '', phone: '', tags: [], price: '', rating: '', address: '', menu: '', image: '' };
           mapInput.value = '';
+          showAddModal.value = true;
+        };
+
+        // 開啟編輯彈窗
+        const openEditModal = (res) => {
+          isEditing.value = true;
+          editingId.value = res.id;
+          newRes.value = { ...res, tags: [...res.tags] }; // 深拷貝避免直接動到原資料
           showAddModal.value = true;
         };
 
@@ -441,12 +462,22 @@
           newRes.value.name = lines[0].replace(/https?:\/\/\S+/, '').trim() || text;
         };
 
+        // 儲存（同時處理新增與修改）
         const saveRestaurant = () => {
           if (!newRes.value.name.trim()) return alert('請輸入餐廳名稱！');
-          restaurants.value.push({
-            id: Date.now(),
-            ...newRes.value
-          });
+
+          if (isEditing.value) {
+            const index = restaurants.value.findIndex(r => r.id === editingId.value);
+            if (index !== -1) {
+              restaurants.value[index] = { ...newRes.value, id: editingId.value };
+            }
+          } else {
+            restaurants.value.push({
+              id: Date.now(),
+              ...newRes.value
+            });
+          }
+
           showAddModal.value = false;
         };
 
@@ -581,10 +612,10 @@
         };
 
         return {
-          currentTab, showAddModal, isLoading, scriptUrl, categories, restaurants,
+          currentTab, showAddModal, isEditing, isLoading, scriptUrl, categories, restaurants,
           selectedFilterCategories, pickedRestaurant, currentOrderRestaurant, newCategoryInput,
           mapInput, newRes, orderItems, orderForm, totalAmount, totalItemCount, itemSummary,
-          toggleFilterCategory, addCategory, removeCategory, openAddModal, toggleNewResTag, parseMapData,
+          toggleFilterCategory, addCategory, removeCategory, openAddModal, openEditModal, toggleNewResTag, parseMapData,
           saveRestaurant, deleteRestaurant, fetchCloudOrders, addOrderItem, clearCloudOrders,
           copyLineFormatText, startOrderSection, startOrderFromCatalog, pickRandom
         };
