@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>等等吃什麼 - 雲端同步修正版</title>
+  <title>等等吃什麼 - 雲端同步版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -17,7 +17,7 @@
     <h1 class="text-3xl font-extrabold text-amber-500 flex items-center justify-center gap-2">
       🍴 等等吃什麼
     </h1>
-    <p class="text-xs text-slate-400 mt-1">線上同步點餐與店家管理</p>
+    <p class="text-xs text-slate-400 mt-1">跨手機 LINE 即時同步點餐算錢</p>
   </header>
 
   <nav class="flex justify-around bg-slate-200/60 p-1.5 rounded-2xl mb-5 text-sm text-slate-600">
@@ -62,23 +62,38 @@
       <p id="res-phone" class="text-xs text-slate-500"></p>
       <p id="res-address" class="text-xs text-slate-500 mt-0.5"></p>
       <p id="res-note" class="text-xs text-slate-400 mt-2 bg-slate-50 p-2 rounded-lg text-left whitespace-pre-line hidden"></p>
+      
+      <button onclick="startGroupOrder()" class="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md">
+        <i class="fa-solid fa-cart-shopping"></i>大家一起線上同步點餐 (開團)
+      </button>
+    </div>
+
+    <div id="order-section" class="hidden space-y-3 bg-slate-100 p-4 rounded-2xl border border-slate-200">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-slate-700 text-sm">🛒 當前點餐明細</h3>
+        <button onclick="fetchSheetOrders()" class="text-xs bg-white border border-slate-300 px-2.5 py-1 rounded-lg text-slate-600">
+          <i class="fa-solid fa-rotate mr-1"></i>重新整理
+        </button>
+      </div>
+      
+      <div id="order-list" class="space-y-2 text-sm max-h-48 overflow-y-auto">
+        <p class="text-xs text-slate-400 text-center py-3">載入點餐明細中...</p>
+      </div>
+
+      <div class="bg-white p-3.5 rounded-xl space-y-2.5 border border-slate-200">
+        <div class="text-xs font-bold text-slate-500 border-b pb-1">新增個人餐點</div>
+        <input id="ord-user" type="text" placeholder="你的名字 *" class="w-full text-xs p-2.5 border rounded-lg">
+        <input id="ord-item" type="text" placeholder="餐點名稱 *" class="w-full text-xs p-2.5 border rounded-lg">
+        <input id="ord-price" type="number" placeholder="金額 *" class="w-full text-xs p-2.5 border rounded-lg">
+        <button onclick="submitOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm">
+          ☁️ 傳送餐點並同步雲端
+        </button>
+      </div>
     </div>
   </main>
 
   <!-- Section 2: 菜單型錄 -->
   <main id="sec-menu" class="hidden space-y-4">
-    <div class="flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-      <span class="text-xs font-bold text-slate-500">雲端餐廳資料庫</span>
-      <div class="flex gap-2">
-        <button onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-2.5 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
-          <i class="fa-solid fa-rotate mr-1"></i>重新整理/抓取
-        </button>
-        <button onclick="initDefaultDataToCloud()" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1.5 rounded-xl font-bold hover:bg-indigo-100">
-          ⚡ 初始資料同步寫入雲端
-        </button>
-      </div>
-    </div>
-
     <button onclick="openAddModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl shadow-sm text-sm flex items-center justify-center gap-2">
       <i class="fa-solid fa-plus"></i> 新增餐廳 / 貼上 Google 地圖資訊
     </button>
@@ -88,38 +103,53 @@
   <!-- Section 3: 設定 -->
   <main id="sec-settings" class="hidden space-y-4">
     <div class="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
-      <h4 class="text-xs font-bold text-slate-700 border-b pb-1.5">🧹 資料清理</h4>
-      <button onclick="clearLocalCache()" class="w-full bg-rose-50 text-rose-600 border border-rose-200 py-2.5 rounded-xl text-xs font-bold hover:bg-rose-100">
-        🗑️ 清除本地快取並強制同步試算表
-      </button>
+      <h4 class="text-xs font-bold text-slate-700 border-b pb-1.5">☁️ 雲端資料庫狀態</h4>
+      <p class="text-xs text-slate-500 leading-relaxed">
+        ✅ 系統已成功連結您的 Google 試算表！<br>
+        • 餐廳基本資料會寫入 <b>Restaurants</b> 工作表<br>
+        • 餐點與價格會寫入 <b>Menu</b> 工作表<br>
+        • 線上點餐紀錄會寫入 <b>Orders</b> 工作表
+      </p>
     </div>
   </main>
 
   <!-- Modal: 新增餐廳 -->
   <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3 shadow-2xl">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 id="modal-title" class="font-bold text-slate-800 text-base">新增餐廳</h3>
+        <h3 class="font-bold text-slate-800 text-base">新增餐廳與菜單</h3>
         <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
       <div class="bg-amber-50 p-2.5 rounded-xl border border-amber-200 space-y-1.5">
-        <label class="text-[11px] font-bold text-amber-900 block">📍 貼上 Google 地圖分享資訊：</label>
+        <label class="text-[11px] font-bold text-amber-900 block">📍 貼上 Google 地圖分享內容：</label>
         <div class="flex gap-1.5">
           <input id="gmap-input" type="text" placeholder="貼上分享內容..." class="flex-1 text-[11px] p-2 border rounded-lg focus:outline-none bg-white">
-          <button onclick="parseGMapInfo()" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-2.5 rounded-lg">解析</button>
+          <button onclick="parseGMapInfo()" class="bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold px-2.5 rounded-lg">自動拆解</button>
         </div>
       </div>
 
-      <input id="m-name" type="text" placeholder="餐廳名稱 *" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
-      <input id="m-phone" type="text" placeholder="電話 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
-      <input id="m-address" type="text" placeholder="地址 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
-      <input id="m-tags" type="text" placeholder="標籤 (空白隔開，如: 便當 美式)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
-      <textarea id="m-note" placeholder="備註資訊 (選填)" class="w-full text-xs p-2.5 border rounded-xl h-20 focus:outline-none focus:border-amber-500"></textarea>
+      <input id="m-name" type="text" placeholder="餐廳名稱 *" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
+      <input id="m-phone" type="text" placeholder="電話 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
+      <input id="m-address" type="text" placeholder="地址 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
+      <input id="m-tags" type="text" placeholder="分類標籤 (空白隔開，如: 便當 美式)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
+      <textarea id="m-note" placeholder="備註說明 (選填)" class="w-full text-xs p-2.5 border rounded-xl h-16 focus:outline-none"></textarea>
+
+      <!-- 餐點與價格明細區 -->
+      <div class="border-t pt-2 space-y-2">
+        <label class="text-xs font-bold text-slate-600 block">🍽️ 菜單品項與價格 (選填)</label>
+        <div id="menu-items-container" class="space-y-1.5">
+          <div class="flex gap-1.5 item-row">
+            <input type="text" placeholder="餐點名稱 (如: 排骨飯)" class="flex-1 text-xs p-2 border rounded-lg item-name">
+            <input type="number" placeholder="金額" class="w-20 text-xs p-2 border rounded-lg item-price">
+          </div>
+        </div>
+        <button onclick="addMenuItemRow()" class="text-[11px] text-amber-600 font-bold border border-amber-300 px-2 py-1 rounded-lg hover:bg-amber-50 w-full">+ 增加一欄餐點</button>
+      </div>
       
       <div class="flex gap-2 pt-2">
         <button onclick="closeModal()" class="flex-1 py-2.5 text-xs border rounded-xl text-slate-600 font-bold">取消</button>
-        <button onclick="saveRestaurant()" class="flex-1 py-2.5 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">儲存並寫入雲端</button>
+        <button onclick="saveRestaurant()" class="flex-1 py-2.5 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">儲存並同步試算表</button>
       </div>
     </div>
   </div>
@@ -127,15 +157,9 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
 
-    const DEFAULT_RESTAURANTS = [
-      { name: "家味小館", phone: "04-22345678", address: "台中市西區...", tags: ["台式小吃", "便當"], note: "招牌排骨飯" },
-      { name: "喵喵鯛魚燒", phone: "0958624479", address: "", tags: ["咖啡/甜點/飲料"], note: "" },
-      { name: "正騰和脆皮炸雞-永興店", phone: "0980010450", address: "40454臺南市北區建築里永興街41號", tags: ["美式/速食", "炸雞"], note: "" },
-      { name: "蘋果手雞 - 炸雞專家", phone: "", address: "", tags: ["美式/速食", "炸雞"], note: "" }
-    ];
-
     let restaurants = [];
     let activeTags = [];
+    let currentRestaurant = "";
 
     document.addEventListener("DOMContentLoaded", () => {
       syncCloudRestaurants();
@@ -156,46 +180,23 @@
         const cloudData = await res.json();
         if (cloudData && cloudData.length > 0) {
           restaurants = cloudData;
-          localStorage.setItem('restaurants', JSON.stringify(restaurants));
-        } else {
-          restaurants = JSON.parse(localStorage.getItem('restaurants')) || [];
         }
-      } catch (e) {
-        restaurants = JSON.parse(localStorage.getItem('restaurants')) || [];
-      }
+      } catch (e) {}
       renderMenu();
       renderTags();
-    }
-
-    async function initDefaultDataToCloud() {
-      if (!confirm("要將預設的餐廳資料（家味小館、喵喵鯛魚燒等）覆蓋寫入 Google 試算表嗎？")) return;
-      try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: "resetRestaurants", list: DEFAULT_RESTAURANTS })
-        });
-        alert('已成功寫入雲端！請稍等 3 秒後自動重新讀取。');
-        setTimeout(syncCloudRestaurants, 3000);
-      } catch (e) {
-        alert('寫入失敗：' + e.message);
-      }
     }
 
     function renderMenu() {
       const container = document.getElementById('restaurant-list');
       if (restaurants.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">目前試算表無資料，請點右上角「⚡ 初始資料同步寫入雲端」！</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">目前無餐廳，請點選上方按鈕新增！</p>';
         return;
       }
       container.innerHTML = restaurants.map((r, i) => `
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative">
           <div class="flex justify-between items-start">
             <h4 class="font-bold text-slate-800 text-base">${r.name}</h4>
-            <div class="flex items-center gap-2 text-slate-400">
-              <button onclick="deleteRestaurant(${i})" title="刪除" class="p-1 hover:text-rose-500 text-slate-400"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
+            <button onclick="deleteRestaurant(${i})" title="刪除" class="p-1 text-slate-300 hover:text-rose-500"><i class="fa-solid fa-trash-can"></i></button>
           </div>
           <div class="flex flex-wrap gap-1 mt-1.5">${(r.tags||[]).map(t => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#${t}</span>`).join('')}</div>
           ${r.phone ? `<p class="text-xs text-slate-500 mt-2">電話: ${r.phone}</p>` : ''}
@@ -205,29 +206,11 @@
       `).join('');
     }
 
-    async function deleteRestaurant(i) {
-      const target = restaurants[i];
-      if (!confirm(`確定要刪除「${target.name}」嗎？`)) return;
-
-      restaurants.splice(i, 1);
-      localStorage.setItem('restaurants', JSON.stringify(restaurants));
-      renderMenu();
-
-      try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: "deleteRestaurant", name: target.name })
-        });
-      } catch (e) {}
-    }
-
     function renderTags() {
       const container = document.getElementById('tag-filters');
       const allTags = [...new Set(restaurants.flatMap(r => r.tags || []))];
       if (allTags.length === 0) {
-        container.innerHTML = '<span class="text-xs text-slate-400">目前無可用標籤</span>';
+        container.innerHTML = '<span class="text-xs text-slate-400">目前無標籤</span>';
         return;
       }
       container.innerHTML = allTags.map(t => `
@@ -246,7 +229,24 @@
 
     function openAddModal() { clearModal(); document.getElementById('modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-    function clearModal() { ['gmap-input','m-name','m-phone','m-address','m-tags','m-note'].forEach(id => document.getElementById(id).value = ''); }
+    function clearModal() { 
+      ['gmap-input','m-name','m-phone','m-address','m-tags','m-note'].forEach(id => document.getElementById(id).value = ''); 
+      document.getElementById('menu-items-container').innerHTML = `
+        <div class="flex gap-1.5 item-row">
+          <input type="text" placeholder="餐點名稱 (如: 排骨飯)" class="flex-1 text-xs p-2 border rounded-lg item-name">
+          <input type="number" placeholder="金額" class="w-20 text-xs p-2 border rounded-lg item-price">
+        </div>`;
+    }
+
+    function addMenuItemRow() {
+      const div = document.createElement('div');
+      div.className = "flex gap-1.5 item-row";
+      div.innerHTML = `
+        <input type="text" placeholder="餐點名稱" class="flex-1 text-xs p-2 border rounded-lg item-name">
+        <input type="number" placeholder="金額" class="w-20 text-xs p-2 border rounded-lg item-price">
+      `;
+      document.getElementById('menu-items-container').appendChild(div);
+    }
 
     function parseGMapInfo() {
       const raw = document.getElementById('gmap-input').value.trim();
@@ -263,6 +263,17 @@
     async function saveRestaurant() {
       const name = document.getElementById('m-name').value.trim();
       if (!name) return alert('請輸入名稱！');
+
+      // 收集餐點與價格
+      const menuRows = document.querySelectorAll('.item-row');
+      const menuItems = [];
+      menuRows.forEach(row => {
+        const itemName = row.querySelector('.item-name').value.trim();
+        const itemPrice = row.querySelector('.item-price').value.trim();
+        if (itemName) {
+          menuItems.push({ item: itemName, price: itemPrice || "0" });
+        }
+      });
       
       const obj = {
         action: "addRestaurant",
@@ -270,11 +281,11 @@
         phone: document.getElementById('m-phone').value.trim(),
         address: document.getElementById('m-address').value.trim(),
         tags: document.getElementById('m-tags').value.trim().split(/\s+/).filter(Boolean),
-        note: document.getElementById('m-note').value.trim()
+        note: document.getElementById('m-note').value.trim(),
+        menuItems
       };
 
       restaurants.push(obj);
-      localStorage.setItem('restaurants', JSON.stringify(restaurants));
       closeModal();
       renderMenu();
       renderTags();
@@ -285,6 +296,24 @@
           mode: 'no-cors',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(obj)
+        });
+        alert('成功新增店家與菜單！已自動寫入 Google 試算表。');
+      } catch (e) {}
+    }
+
+    async function deleteRestaurant(i) {
+      const target = restaurants[i];
+      if (!confirm(`確定要刪除「${target.name}」嗎？`)) return;
+
+      restaurants.splice(i, 1);
+      renderMenu();
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "deleteRestaurant", name: target.name })
         });
       } catch (e) {}
     }
@@ -297,6 +326,7 @@
       if (pool.length === 0) return alert('無符合條件的餐廳！');
       
       const pick = pool[Math.floor(Math.random() * pool.length)];
+      currentRestaurant = pick.name;
       document.getElementById('res-name').innerText = pick.name;
       document.getElementById('res-tags').innerHTML = (pick.tags || []).map(t => `<span class="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-bold border border-amber-200">#${t}</span>`).join('');
       document.getElementById('res-phone').innerText = pick.phone ? `📞 電話：${pick.phone}` : '';
@@ -311,12 +341,54 @@
       }
 
       document.getElementById('result-box').classList.remove('hidden');
+      document.getElementById('order-section').classList.add('hidden');
     }
 
-    function clearLocalCache() {
-      localStorage.clear();
-      alert('已清理快取！正在向雲端重新抓取...');
-      syncCloudRestaurants();
+    function startGroupOrder() {
+      document.getElementById('order-section').classList.remove('hidden');
+      fetchSheetOrders();
+    }
+
+    async function submitOrder() {
+      const user = document.getElementById('ord-user').value.trim();
+      const item = document.getElementById('ord-item').value.trim();
+      const price = document.getElementById('ord-price').value.trim();
+
+      if (!user || !item || !price) return alert('請完整填寫名字、餐點與金額！');
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: "addOrder", restaurant: currentRestaurant, user, item, price })
+        });
+        alert('餐點已傳送！');
+        document.getElementById('ord-item').value = '';
+        document.getElementById('ord-price').value = '';
+        fetchSheetOrders();
+      } catch (e) {
+        alert('同步失敗：' + e.message);
+      }
+    }
+
+    async function fetchSheetOrders() {
+      const container = document.getElementById('order-list');
+      try {
+        const res = await fetch(`${SCRIPT_URL}?restaurant=${encodeURIComponent(currentRestaurant)}&t=${Date.now()}`);
+        const data = await res.json();
+        if (data && data.length > 0) {
+          container.innerHTML = data.map(o => `
+            <div class="bg-white p-2.5 rounded-xl flex justify-between items-center shadow-sm border border-slate-100">
+              <span class="font-bold text-slate-700">${o.user}</span>
+              <span class="text-slate-600 text-xs">${o.item}</span>
+              <span class="font-bold text-amber-600">$${o.price}</span>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">目前尚無人點餐</p>';
+        }
+      } catch (e) {}
     }
   </script>
 </body>
