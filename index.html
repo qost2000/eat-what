@@ -3,9 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <title>等等吃什麼 - 雲端即時同步版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -16,7 +13,6 @@
 </head>
 <body class="p-4 max-w-md mx-auto text-slate-800 pb-12">
 
-  <!-- Header -->
   <header class="text-center my-4">
     <h1 class="text-3xl font-extrabold text-amber-500 flex items-center justify-center gap-2">
       🍴 等等吃什麼
@@ -24,7 +20,6 @@
     <p class="text-xs text-slate-400 mt-1">跨手機 LINE 即時同步點餐算錢</p>
   </header>
 
-  <!-- Navigation -->
   <nav class="flex justify-around bg-slate-200/60 p-1.5 rounded-2xl mb-5 text-sm text-slate-600">
     <button id="tab-random" onclick="switchTab('random')" class="flex-1 py-2.5 text-center rounded-xl active-tab transition-all">
       <i class="fa-solid fa-dice mr-1 text-amber-500"></i>亂數決策
@@ -194,10 +189,8 @@
     let currentRestaurant = "";
 
     document.addEventListener("DOMContentLoaded", () => {
-      // 先用預設/快取資料渲染頁面，避免出現空白
       renderMenu();
       renderTags();
-      // 隨後自動從雲端同步最新內容
       syncCloudRestaurants();
     });
 
@@ -210,19 +203,33 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
+    // 利用 JSONP 技術動態載入，100% 繞過跨網域 CORS 限制
+    function fetchJSONP(url, callbackName) {
+      return new Promise((resolve) => {
+        const script = document.createElement('script');
+        window[callbackName] = function(data) {
+          delete window[callbackName];
+          document.body.removeChild(script);
+          resolve(data);
+        };
+        script.src = `${url}&callback=${callbackName}&t=${Date.now()}`;
+        document.body.appendChild(script);
+      });
+    }
+
     async function syncCloudRestaurants() {
       const btnSync = document.getElementById('btn-sync');
       if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>讀取中...';
 
       try {
-        const res = await fetch(`${SCRIPT_URL}?action=getRestaurants&t=${Date.now()}`);
-        const cloudData = await res.json();
+        const cbName = 'cb_' + Math.random().toString(36).substring(2);
+        const cloudData = await fetchJSONP(`${SCRIPT_URL}?action=getRestaurants`, cbName);
         if (Array.isArray(cloudData) && cloudData.length > 0) {
           restaurants = cloudData;
           localStorage.setItem('restaurants', JSON.stringify(restaurants));
         }
       } catch (e) {
-        console.warn('雲端讀取失敗，使用本機快取資料', e);
+        console.warn('JSONP 讀取備援機制啟動', e);
       } finally {
         if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>讀取雲端';
         renderMenu();
@@ -448,9 +455,9 @@
     async function fetchSheetOrders() {
       const container = document.getElementById('order-list');
       try {
-        const res = await fetch(`${SCRIPT_URL}?action=getOrders&restaurant=${encodeURIComponent(currentRestaurant)}&t=${Date.now()}`);
-        const data = await res.json();
-        if (data && data.length > 0) {
+        const cbName = 'cb_ord_' + Math.random().toString(36).substring(2);
+        const data = await fetchJSONP(`${SCRIPT_URL}?action=getOrders&restaurant=${encodeURIComponent(currentRestaurant)}`, cbName);
+        if (Array.isArray(data) && data.length > 0) {
           container.innerHTML = data.map(o => `
             <div class="bg-white p-2.5 rounded-xl flex justify-between items-center shadow-sm border border-slate-100">
               <span class="font-bold text-slate-700">${o.user}</span>
