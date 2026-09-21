@@ -6,85 +6,93 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>等等吃什麼 - 雲端同步點餐 v2.1</title>
+  <title>等等吃什麼 - 完整旗艦版 v3.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .active-tab { background-color: #ffffff; color: #d97706; font-weight: bold; border-bottom: 3px solid #d97706; }
+    .active-tab { background-color: #ffffff; color: #d97706; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
   </style>
 </head>
-<body class="p-4 max-w-md mx-auto text-slate-800">
+<body class="p-4 max-w-md mx-auto text-slate-800 pb-12">
 
   <!-- Header -->
   <header class="text-center my-4">
     <h1 class="text-3xl font-extrabold text-amber-500 flex items-center justify-center gap-2">
-      <i class="fa-solid font-utensils"></i> 🍴 等等吃什麼
+      🍴 等等吃什麼
     </h1>
-    <p class="text-xs text-slate-400 mt-1">跨手機 LINE 即時同步點餐算錢 (v2.1)</p>
+    <p class="text-xs text-slate-400 mt-1">跨手機 LINE 即時同步點餐算錢 (v3.0 旗艦版)</p>
   </header>
 
   <!-- Navigation -->
-  <nav class="flex justify-around bg-slate-200/60 p-1 rounded-xl mb-4 text-sm text-slate-600">
-    <button id="tab-random" onclick="switchTab('random')" class="flex-1 py-2 text-center rounded-lg active-tab">
-      <i class="fa-solid fa-dice mr-1"></i>亂數決策
+  <nav class="flex justify-around bg-slate-200/60 p-1.5 rounded-2xl mb-5 text-sm text-slate-600">
+    <button id="tab-random" onclick="switchTab('random')" class="flex-1 py-2.5 text-center rounded-xl active-tab transition-all">
+      <i class="fa-solid fa-dice mr-1 text-amber-500"></i>亂數決策
     </button>
-    <button id="tab-menu" onclick="switchTab('menu')" class="flex-1 py-2 text-center rounded-lg">
-      <i class="fa-solid fa-book-open mr-1"></i>菜單型錄
+    <button id="tab-menu" onclick="switchTab('menu')" class="flex-1 py-2.5 text-center rounded-xl transition-all">
+      <i class="fa-solid fa-book-open mr-1 text-amber-500"></i>菜單型錄
     </button>
-    <button id="tab-settings" onclick="switchTab('settings')" class="flex-1 py-2 text-center rounded-lg">
-      <i class="fa-solid fa-gear mr-1"></i>設定
+    <button id="tab-settings" onclick="switchTab('settings')" class="flex-1 py-2.5 text-center rounded-xl transition-all">
+      <i class="fa-solid fa-gear mr-1 text-amber-500"></i>設定
     </button>
   </nav>
 
   <!-- Section 1: 亂數決策 -->
   <main id="sec-random" class="space-y-4">
-    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-      <label class="block text-xs font-bold text-slate-400 mb-2">依標題分類過濾（可複選）</label>
+    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
+      <div class="flex justify-between items-center">
+        <label class="text-xs font-bold text-slate-400">依標題分類過濾（可複選）</label>
+        <button onclick="clearTagFilters()" class="text-[10px] text-amber-600 font-bold hover:underline">清除選擇</button>
+      </div>
       <div id="tag-filters" class="flex flex-wrap gap-2"></div>
     </div>
 
     <div class="grid grid-cols-2 gap-3">
-      <button onclick="drawRandom(true)" class="bg-amber-500 hover:bg-amber-600 text-white p-4 rounded-2xl shadow-md font-bold flex flex-col items-center justify-center gap-2">
+      <button onclick="drawRandom(true)" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white p-4 rounded-2xl shadow-md font-bold flex flex-col items-center justify-center gap-2 transition-all">
         <i class="fa-solid fa-filter text-2xl"></i>
         <span>依分類抽籤</span>
       </button>
-      <button onclick="drawRandom(false)" class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-2xl shadow-md font-bold flex flex-col items-center justify-center gap-2">
+      <button onclick="drawRandom(false)" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white p-4 rounded-2xl shadow-md font-bold flex flex-col items-center justify-center gap-2 transition-all">
         <i class="fa-solid fa-shuffle text-2xl"></i>
         <span>隨機大盲盒</span>
       </button>
     </div>
 
     <!-- Result Area -->
-    <div id="result-box" class="hidden bg-white p-4 rounded-2xl shadow-md border-2 border-amber-400 text-center relative">
-      <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs px-3 py-0.5 rounded-full font-bold">決定吃這個！</span>
-      <h2 id="res-name" class="text-xl font-bold text-slate-800 mt-1"></h2>
-      <p id="res-info" class="text-xs text-slate-500 mt-1"></p>
+    <div id="result-box" class="hidden bg-white p-5 rounded-2xl shadow-lg border-2 border-amber-400 text-center relative mt-4">
+      <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs px-3 py-0.5 rounded-full font-bold shadow-sm">決定吃這個！</span>
+      <h2 id="res-name" class="text-2xl font-black text-slate-800 mt-1"></h2>
+      <div id="res-tags" class="flex justify-center flex-wrap gap-1 my-2"></div>
+      <p id="res-phone" class="text-xs text-slate-500"></p>
+      <p id="res-address" class="text-xs text-slate-500 mt-0.5"></p>
+      <p id="res-note" class="text-xs text-slate-400 mt-2 bg-slate-50 p-2 rounded-lg text-left whitespace-pre-line hidden"></p>
       
-      <button onclick="startGroupOrder()" class="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm">
+      <button onclick="startGroupOrder()" class="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all">
         <i class="fa-solid fa-cart-shopping"></i>大家一起線上同步點餐 (開團)
       </button>
     </div>
 
     <!-- Order Area -->
-    <div id="order-section" class="hidden space-y-3 bg-slate-100 p-3 rounded-2xl">
-      <h3 class="font-bold text-slate-700 text-sm flex items-center justify-between">
-        <span>🛒 當前點餐明細</span>
-        <button onclick="fetchSheetOrders()" class="text-xs bg-white border border-slate-300 px-2 py-1 rounded-lg text-slate-600">
-          <i class="fa-solid fa-rotate mr-1"></i>重新整理
+    <div id="order-section" class="hidden space-y-3 bg-slate-100 p-4 rounded-2xl border border-slate-200">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-slate-700 text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-users text-amber-500"></i>線上點餐明細
+        </h3>
+        <button onclick="fetchSheetOrders()" class="text-xs bg-white border border-slate-300 px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-50 shadow-sm">
+          <i class="fa-solid fa-rotate mr-1 text-slate-400"></i>重新整理
         </button>
-      </h3>
+      </div>
       
-      <div id="order-list" class="space-y-2 text-sm">
-        <p class="text-xs text-slate-400 text-center py-2">載入點餐明細中...</p>
+      <div id="order-list" class="space-y-2 text-sm max-h-48 overflow-y-auto">
+        <p class="text-xs text-slate-400 text-center py-3">載入點餐明細中...</p>
       </div>
 
-      <div class="bg-white p-3 rounded-xl space-y-2 border border-slate-200">
-        <div class="text-xs font-bold text-slate-500">新增個人餐點</div>
-        <input id="ord-user" type="text" placeholder="你的名字" class="w-full text-xs p-2 border rounded-lg">
-        <input id="ord-item" type="text" placeholder="餐點名稱 (例: 排骨飯)" class="w-full text-xs p-2 border rounded-lg">
-        <input id="ord-price" type="number" placeholder="金額" class="w-full text-xs p-2 border rounded-lg">
-        <button onclick="submitOrder()" class="w-full bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg shadow-sm">
+      <div class="bg-white p-3.5 rounded-xl space-y-2.5 border border-slate-200 shadow-sm">
+        <div class="text-xs font-bold text-slate-500 border-b pb-1">新增個人餐點</div>
+        <input id="ord-user" type="text" placeholder="你的名字 *" class="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-amber-500">
+        <input id="ord-item" type="text" placeholder="餐點名稱 (例如: 招牌排骨飯) *" class="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-amber-500">
+        <input id="ord-price" type="number" placeholder="金額 (例如: 100) *" class="w-full text-xs p-2.5 border rounded-lg focus:outline-none focus:border-amber-500">
+        <button onclick="submitOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-sm active:scale-95 transition-all">
           ☁️ 傳送餐點並同步雲端
         </button>
       </div>
@@ -93,44 +101,88 @@
 
   <!-- Section 2: 菜單型錄 -->
   <main id="sec-menu" class="hidden space-y-4">
-    <button onclick="openAddModal()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl shadow-sm text-sm">
-      + 新增餐廳 / 貼上 Google 地圖
+    <button onclick="openAddModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl shadow-sm text-sm flex items-center justify-center gap-2">
+      <i class="fa-solid fa-plus"></i> 新增餐廳 / 貼上 Google 地圖
     </button>
     <div id="restaurant-list" class="space-y-3"></div>
   </main>
 
   <!-- Section 3: 設定 -->
   <main id="sec-settings" class="hidden space-y-4">
-    <div class="bg-amber-50/80 p-4 rounded-2xl border border-amber-200/60 space-y-2">
-      <label class="block text-xs font-bold text-amber-900 flex items-center gap-1">
-        <i class="fa-solid fa-cloud"></i> Google 試算表 Web App URL
+    <div class="bg-amber-50/90 p-4 rounded-2xl border border-amber-200/80 space-y-2.5 shadow-sm">
+      <label class="block text-xs font-bold text-amber-900 flex items-center gap-1.5">
+        <i class="fa-solid fa-cloud text-amber-600"></i> Google 試算表 Web App URL
       </label>
-      <input id="script-url" type="text" class="w-full text-xs p-2 border rounded-lg bg-white" placeholder="已預設雲端連線網址">
-      <p class="text-[10px] text-amber-700">已自動預設您的試算表網址，所有手機打開即可同步！</p>
+      <input id="script-url" type="text" class="w-full text-xs p-2.5 border rounded-xl bg-white text-slate-600 focus:outline-none focus:border-amber-500" placeholder="已預設雲端連線網址">
+      <p class="text-[11px] text-amber-700 leading-relaxed">
+        ✅ 系統已自動幫所有使用者預設您的 Google 試算表連線網址！大家開啟網頁即可直接同步點餐。
+      </p>
+    </div>
+
+    <div class="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-sm">
+      <h4 class="text-xs font-bold text-slate-700 border-b pb-1.5">資料管理與重置</h4>
+      <button onclick="resetDefaultRestaurants()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-xl border border-slate-300">
+        🔄 恢復預設餐廳名單 (包含正騰和、家味小館等)
+      </button>
     </div>
   </main>
 
   <!-- Modal: 新增/編輯餐廳 -->
-  <div id="modal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl p-4 w-full max-w-sm space-y-3">
-      <h3 id="modal-title" class="font-bold text-slate-800 text-base">新增餐廳</h3>
-      <input id="m-name" type="text" placeholder="餐廳名稱 *" class="w-full text-xs p-2 border rounded-lg">
-      <input id="m-phone" type="text" placeholder="電話" class="w-full text-xs p-2 border rounded-lg">
-      <input id="m-address" type="text" placeholder="地址" class="w-full text-xs p-2 border rounded-lg">
-      <input id="m-tags" type="text" placeholder="標籤 (用空格隔開，如: 便當 美式)" class="w-full text-xs p-2 border rounded-lg">
-      <textarea id="m-note" placeholder="菜單 / 備註" class="w-full text-xs p-2 border rounded-lg h-16"></textarea>
-      <div class="flex gap-2">
-        <button onclick="closeModal()" class="flex-1 py-2 text-xs border rounded-lg text-slate-600">取消</button>
-        <button onclick="saveRestaurant()" class="flex-1 py-2 text-xs bg-amber-500 text-white font-bold rounded-lg">儲存</button>
+  <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3 shadow-2xl">
+      <div class="flex justify-between items-center border-b pb-2">
+        <h3 id="modal-title" class="font-bold text-slate-800 text-base">新增餐廳</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <input id="m-name" type="text" placeholder="餐廳名稱 *" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
+      <input id="m-phone" type="text" placeholder="電話 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
+      <input id="m-address" type="text" placeholder="地址 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
+      <input id="m-tags" type="text" placeholder="標籤 (用空格隔開，例如: 台式小吃 便當)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none focus:border-amber-500">
+      <textarea id="m-note" placeholder="菜單 / 備註資訊 (選填)" class="w-full text-xs p-2.5 border rounded-xl h-20 focus:outline-none focus:border-amber-500"></textarea>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeModal()" class="flex-1 py-2.5 text-xs border rounded-xl text-slate-600 font-bold">取消</button>
+        <button onclick="saveRestaurant()" class="flex-1 py-2.5 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl shadow-sm">儲存修改</button>
       </div>
     </div>
   </div>
 
   <script>
-    // 預設將您的 Google Web App 網址直接填入 (所有人免設定)
+    // 寫死預設 Google Web App 網址，所有人打開直接連線
     const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
 
-    let restaurants = JSON.parse(localStorage.getItem('restaurants') || '[]');
+    // 內建預設餐廳清單（解決手機開啟空空如也的問題）
+    const INITIAL_RESTAURANTS = [
+      {
+        name: "家味小館",
+        phone: "04-22345678",
+        address: "台中市西區...",
+        tags: ["台式小吃", "便當"],
+        note: "招牌排骨飯"
+      },
+      {
+        name: "喵喵鯛魚燒",
+        phone: "0958624479",
+        address: "",
+        tags: ["咖啡/甜點/飲料"],
+        note: ""
+      },
+      {
+        name: "正騰和脆皮炸雞-永興店",
+        phone: "0980010450",
+        address: "40454臺南市北區建築里永興街41號",
+        tags: ["美式/速食"],
+        note: ""
+      },
+      {
+        name: "蘋果手雞 - 炸雞專家",
+        phone: "",
+        address: "",
+        tags: ["美式/速食"],
+        note: ""
+      }
+    ];
+
+    let restaurants = JSON.parse(localStorage.getItem('restaurants')) || INITIAL_RESTAURANTS;
     let activeTags = [];
     let editIndex = null;
     let currentRestaurant = "";
@@ -144,6 +196,12 @@
       document.getElementById('script-url').addEventListener('change', (e) => {
         localStorage.setItem('google_script_url', e.target.value.trim());
       });
+      
+      // 若第一次載入LocalStorage為空，強制儲存預設餐廳
+      if (!localStorage.getItem('restaurants')) {
+        localStorage.setItem('restaurants', JSON.stringify(INITIAL_RESTAURANTS));
+      }
+
       renderTags();
       renderMenu();
     });
@@ -158,17 +216,25 @@
     }
 
     function renderTags() {
-      const allTags = [...new Set(restaurants.flatMap(r => r.tags || []))];
+      const defaultTags = ["台式小吃", "麵食/飯類", "日式料理", "燒烤/居酒屋", "韓式料理", "美式/速食", "火鍋", "素食/蔬食", "泰式/東南亞", "義式/西式", "咖啡/甜點/飲料", "滷味/鹽水", "便當"];
+      const customTags = [...new Set(restaurants.flatMap(r => r.tags || []))];
+      const allTags = [...new Set([...defaultTags, ...customTags])];
+
       const container = document.getElementById('tag-filters');
       container.innerHTML = allTags.map(t => `
-        <button onclick="toggleTag('${t}')" class="px-2.5 py-1 rounded-full text-xs font-medium border ${activeTags.includes(t) ? 'bg-amber-500 text-white border-amber-500' : 'bg-slate-50 text-slate-600 border-slate-200'}">
+        <button onclick="toggleTag('${t}')" class="px-3 py-1 rounded-full text-xs font-medium border transition-all ${activeTags.includes(t) ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
           # ${t}
         </button>
-      `).join('') || '<span class="text-xs text-slate-400">尚無標籤</span>';
+      `).join('');
     }
 
     function toggleTag(t) {
       activeTags = activeTags.includes(t) ? activeTags.filter(x => x !== t) : [...activeTags, t];
+      renderTags();
+    }
+
+    function clearTagFilters() {
+      activeTags = [];
       renderTags();
     }
 
@@ -177,12 +243,28 @@
       if (useFilter && activeTags.length > 0) {
         pool = restaurants.filter(r => r.tags && r.tags.some(t => activeTags.includes(t)));
       }
-      if (pool.length === 0) return alert('沒有符合條件的餐廳！');
+      if (pool.length === 0) return alert('沒有符合篩選條件的餐廳！請嘗試多選一些標籤或增加餐廳。');
       
       const pick = pool[Math.floor(Math.random() * pool.length)];
       currentRestaurant = pick.name;
+      
       document.getElementById('res-name').innerText = pick.name;
-      document.getElementById('res-info').innerText = `${pick.phone || ''} ${pick.address || ''}`;
+      
+      // Render tags
+      const tagBox = document.getElementById('res-tags');
+      tagBox.innerHTML = (pick.tags || []).map(t => `<span class="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full font-bold border border-amber-200">#${t}</span>`).join('');
+      
+      document.getElementById('res-phone').innerText = pick.phone ? `📞 電話：${pick.phone}` : '';
+      document.getElementById('res-address').innerText = pick.address ? `📍 地址：${pick.address}` : '';
+      
+      const noteElem = document.getElementById('res-note');
+      if (pick.note) {
+        noteElem.innerText = `📝 菜單/備註：\n${pick.note}`;
+        noteElem.classList.remove('hidden');
+      } else {
+        noteElem.classList.add('hidden');
+      }
+
       document.getElementById('result-box').classList.remove('hidden');
       document.getElementById('order-section').classList.add('hidden');
     }
@@ -194,18 +276,23 @@
 
     function renderMenu() {
       const container = document.getElementById('restaurant-list');
+      if (restaurants.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">目前沒有任何餐廳，請點擊上方按鈕新增！</p>';
+        return;
+      }
       container.innerHTML = restaurants.map((r, i) => `
-        <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-100 relative">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative">
           <div class="flex justify-between items-start">
             <h4 class="font-bold text-slate-800 text-base">${r.name}</h4>
-            <div class="space-x-1 text-slate-400">
-              <button onclick="openEditModal(${i})" class="p-1 hover:text-amber-500"><i class="fa-solid fa-pen"></i></button>
-              <button onclick="deleteRestaurant(${i})" class="p-1 hover:text-rose-500"><i class="fa-solid fa-trash"></i></button>
+            <div class="flex items-center gap-2 text-slate-400">
+              <button onclick="openEditModal(${i})" class="p-1 hover:text-amber-500 transition-colors" title="編輯"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteRestaurant(${i})" class="p-1 hover:text-rose-500 transition-colors" title="刪除"><i class="fa-solid fa-trash-can"></i></button>
             </div>
           </div>
-          <div class="flex flex-wrap gap-1 mt-1">${(r.tags||[]).map(t => `<span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">#${t}</span>`).join('')}</div>
-          <p class="text-xs text-slate-500 mt-2">電話: ${r.phone || '無'}</p>
-          <p class="text-xs text-slate-500">地址: ${r.address || '無'}</p>
+          <div class="flex flex-wrap gap-1 mt-1.5">${(r.tags||[]).map(t => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#${t}</span>`).join('')}</div>
+          ${r.phone ? `<p class="text-xs text-slate-500 mt-2">電話: ${r.phone}</p>` : ''}
+          ${r.address ? `<p class="text-xs text-slate-500 mt-0.5">地址: ${r.address}</p>` : ''}
+          ${r.note ? `<p class="text-xs text-slate-400 mt-1.5 bg-slate-50 p-2 rounded-lg">菜單/備註: ${r.note}</p>` : ''}
         </div>
       `).join('');
     }
@@ -214,7 +301,7 @@
     function openEditModal(i) {
       editIndex = i;
       const r = restaurants[i];
-      document.getElementById('modal-title').innerText="編輯餐廳";
+      document.getElementById('modal-title').innerText="編輯餐廳資訊";
       document.getElementById('m-name').value = r.name;
       document.getElementById('m-phone').value = r.phone || '';
       document.getElementById('m-address').value = r.address || '';
@@ -227,7 +314,7 @@
 
     function saveRestaurant() {
       const name = document.getElementById('m-name').value.trim();
-      if (!name) return alert('請輸入名稱');
+      if (!name) return alert('請輸入餐廳名稱！');
       const obj = {
         name,
         phone: document.getElementById('m-phone').value.trim(),
@@ -237,6 +324,7 @@
       };
       if (editIndex !== null) restaurants[editIndex] = obj;
       else restaurants.push(obj);
+      
       localStorage.setItem('restaurants', JSON.stringify(restaurants));
       closeModal();
       renderMenu();
@@ -244,11 +332,21 @@
     }
 
     function deleteRestaurant(i) {
-      if (confirm('確定刪除此餐廳？')) {
+      if (confirm(`確定要刪除「${restaurants[i].name}」嗎？`)) {
         restaurants.splice(i, 1);
         localStorage.setItem('restaurants', JSON.stringify(restaurants));
         renderMenu();
         renderTags();
+      }
+    }
+
+    function resetDefaultRestaurants() {
+      if (confirm('這將會還原為預設餐廳名單（家味小館、正騰和等），確定嗎？')) {
+        restaurants = INITIAL_RESTAURANTS;
+        localStorage.setItem('restaurants', JSON.stringify(restaurants));
+        renderMenu();
+        renderTags();
+        alert('已成功恢復預設餐廳名單！');
       }
     }
 
@@ -258,7 +356,7 @@
       const item = document.getElementById('ord-item').value.trim();
       const price = document.getElementById('ord-price').value.trim();
 
-      if (!user || !item || !price) return alert('請完整填寫名字、餐點與金額');
+      if (!user || !item || !price) return alert('請完整填寫名字、餐點與金額！');
 
       try {
         await fetch(url, {
@@ -284,17 +382,17 @@
         const data = await res.json();
         if (data && data.length > 0) {
           container.innerHTML = data.map(o => `
-            <div class="bg-white p-2 rounded-lg flex justify-between items-center shadow-sm">
+            <div class="bg-white p-2.5 rounded-xl flex justify-between items-center shadow-sm border border-slate-100">
               <span class="font-bold text-slate-700">${o.user}</span>
-              <span class="text-slate-600">${o.item}</span>
+              <span class="text-slate-600 text-xs">${o.item}</span>
               <span class="font-bold text-amber-600">$${o.price}</span>
             </div>
           `).join('');
         } else {
-          container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">目前尚無人點餐</p>';
+          container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">目前尚無人點餐</p>';
         }
       } catch (e) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">已同步資料至 Google 試算表</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">已連線至雲端試算表</p>';
       }
     }
   </script>
