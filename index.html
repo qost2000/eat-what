@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>等等吃什麼 - 雲端同步版</title>
+  <title>等等吃什麼 - 雲端同步選單版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -94,6 +94,18 @@
 
   <!-- Section 2: 菜單型錄 -->
   <main id="sec-menu" class="hidden space-y-4">
+    <div class="flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
+      <span class="text-xs font-bold text-slate-500">雲端餐廳資料庫</span>
+      <div class="flex gap-2">
+        <button onclick="syncCloudRestaurants()" class="text-xs bg-amber-500 text-white px-2.5 py-1.5 rounded-xl font-bold hover:bg-amber-600 shadow-sm">
+          <i class="fa-solid fa-rotate mr-1"></i>讀取雲端
+        </button>
+        <button onclick="initDefaultDataToCloud()" class="text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-2.5 py-1.5 rounded-xl font-bold hover:bg-indigo-100">
+          ⚡ 初始資料寫入雲端
+        </button>
+      </div>
+    </div>
+
     <button onclick="openAddModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-2xl shadow-sm text-sm flex items-center justify-center gap-2">
       <i class="fa-solid fa-plus"></i> 新增餐廳 / 貼上 Google 地圖資訊
     </button>
@@ -132,7 +144,17 @@
       <input id="m-name" type="text" placeholder="餐廳名稱 *" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
       <input id="m-phone" type="text" placeholder="電話 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
       <input id="m-address" type="text" placeholder="地址 (選填)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
-      <input id="m-tags" type="text" placeholder="分類標籤 (空白隔開，如: 便當 美式)" class="w-full text-xs p-2.5 border rounded-xl focus:outline-none">
+      
+      <!-- 選單選擇類別標籤區 -->
+      <div class="space-y-1">
+        <label class="text-xs font-bold text-slate-600 block">🏷️ 選擇分類標籤（可複選）：</label>
+        <div id="modal-tag-options" class="flex flex-wrap gap-1.5 bg-slate-50 p-2.5 rounded-xl border"></div>
+        <div class="flex gap-1.5 pt-1">
+          <input id="new-custom-tag-input" type="text" placeholder="新增自訂標籤..." class="flex-1 text-[11px] p-1.5 border rounded-lg">
+          <button onclick="addNewCustomTagInModal()" class="bg-slate-700 text-white text-[11px] font-bold px-2.5 rounded-lg">+ 新增標籤</button>
+        </div>
+      </div>
+
       <textarea id="m-note" placeholder="備註說明 (選填)" class="w-full text-xs p-2.5 border rounded-xl h-16 focus:outline-none"></textarea>
 
       <!-- 餐點與價格明細區 -->
@@ -157,8 +179,12 @@
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
 
+    const DEFAULT_CATEGORY_TAGS = ["台式小吃", "麵食/飯類", "日式料理", "美式/速食", "火鍋", "咖啡/甜點/飲料", "便當", "炸雞", "燒烤/居酒屋", "泰式/東南亞", "素食/蔬食"];
+
     let restaurants = [];
     let activeTags = [];
+    let modalSelectedTags = [];
+    let customCategoryTags = JSON.parse(localStorage.getItem('custom_category_tags')) || DEFAULT_CATEGORY_TAGS;
     let currentRestaurant = "";
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -208,11 +234,7 @@
 
     function renderTags() {
       const container = document.getElementById('tag-filters');
-      const allTags = [...new Set(restaurants.flatMap(r => r.tags || []))];
-      if (allTags.length === 0) {
-        container.innerHTML = '<span class="text-xs text-slate-400">目前無標籤</span>';
-        return;
-      }
+      const allTags = [...new Set([...customCategoryTags, ...restaurants.flatMap(r => r.tags || [])])];
       container.innerHTML = allTags.map(t => `
         <button onclick="toggleTag('${t}')" class="px-3 py-1 rounded-full text-xs font-medium border transition-all ${activeTags.includes(t) ? 'bg-amber-500 text-white border-amber-500 shadow-sm' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">
           # ${t}
@@ -227,10 +249,43 @@
 
     function clearTagFilters() { activeTags = []; renderTags(); }
 
-    function openAddModal() { clearModal(); document.getElementById('modal').classList.remove('hidden'); }
+    /* 彈出視窗標籤選項渲染 */
+    function renderModalTagOptions() {
+      const container = document.getElementById('modal-tag-options');
+      const allTags = [...new Set([...customCategoryTags, ...restaurants.flatMap(r => r.tags || [])])];
+      container.innerHTML = allTags.map(t => `
+        <button type="button" onclick="toggleModalTag('${t}')" class="px-2.5 py-1 rounded-lg text-[11px] border font-medium transition-all ${modalSelectedTags.includes(t) ? 'bg-amber-500 text-white border-amber-500 font-bold' : 'bg-white text-slate-600 border-slate-200'}">
+          ${modalSelectedTags.includes(t) ? '✓ ' : ''}${t}
+        </button>
+      `).join('');
+    }
+
+    function toggleModalTag(t) {
+      modalSelectedTags = modalSelectedTags.includes(t) ? modalSelectedTags.filter(x => x !== t) : [...modalSelectedTags, t];
+      renderModalTagOptions();
+    }
+
+    function addNewCustomTagInModal() {
+      const input = document.getElementById('new-custom-tag-input');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!customCategoryTags.includes(val)) {
+        customCategoryTags.push(val);
+        localStorage.setItem('custom_category_tags', JSON.stringify(customCategoryTags));
+      }
+      if (!modalSelectedTags.includes(val)) {
+        modalSelectedTags.push(val);
+      }
+      input.value = '';
+      renderModalTagOptions();
+      renderTags();
+    }
+
+    function openAddModal() { clearModal(); renderModalTagOptions(); document.getElementById('modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
     function clearModal() { 
-      ['gmap-input','m-name','m-phone','m-address','m-tags','m-note'].forEach(id => document.getElementById(id).value = ''); 
+      ['gmap-input','m-name','m-phone','m-address','m-note'].forEach(id => document.getElementById(id).value = ''); 
+      modalSelectedTags = [];
       document.getElementById('menu-items-container').innerHTML = `
         <div class="flex gap-1.5 item-row">
           <input type="text" placeholder="餐點名稱 (如: 排骨飯)" class="flex-1 text-xs p-2 border rounded-lg item-name">
@@ -264,7 +319,6 @@
       const name = document.getElementById('m-name').value.trim();
       if (!name) return alert('請輸入名稱！');
 
-      // 收集餐點與價格
       const menuRows = document.querySelectorAll('.item-row');
       const menuItems = [];
       menuRows.forEach(row => {
@@ -280,7 +334,7 @@
         name,
         phone: document.getElementById('m-phone').value.trim(),
         address: document.getElementById('m-address').value.trim(),
-        tags: document.getElementById('m-tags').value.trim().split(/\s+/).filter(Boolean),
+        tags: modalSelectedTags,
         note: document.getElementById('m-note').value.trim(),
         menuItems
       };
@@ -297,7 +351,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(obj)
         });
-        alert('成功新增店家與菜單！已自動寫入 Google 試算表。');
+        alert('成功新增店家與菜單！已同步寫入 Google 試算表。');
       } catch (e) {}
     }
 
