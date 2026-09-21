@@ -122,11 +122,11 @@
     </div>
   </main>
 
-  <!-- Modal: 新增餐廳 -->
+  <!-- Modal: 新增/編輯餐廳 -->
   <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
     <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="font-bold text-slate-800 text-base">新增餐廳與菜單</h3>
+        <h3 id="modal-title" class="font-bold text-slate-800 text-base">新增餐廳與菜單</h3>
         <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
@@ -187,6 +187,7 @@
     let modalSelectedTags = [];
     let customCategoryTags = JSON.parse(localStorage.getItem('custom_category_tags')) || DEFAULT_CATEGORY_TAGS;
     let currentRestaurant = "";
+    let editingIndex = null; // 紀錄正在編輯的餐廳索引
 
     document.addEventListener("DOMContentLoaded", () => {
       renderMenu();
@@ -203,7 +204,6 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
-    // 利用 JSONP 技術動態載入，100% 繞過跨網域 CORS 限制
     function fetchJSONP(url, callbackName) {
       return new Promise((resolve) => {
         const script = document.createElement('script');
@@ -229,7 +229,6 @@
           localStorage.setItem('restaurants', JSON.stringify(restaurants));
         }
       } catch (e) {
-        console.warn('JSONP 讀取備援機制啟動', e);
       } finally {
         if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>讀取雲端';
         renderMenu();
@@ -247,7 +246,10 @@
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative">
           <div class="flex justify-between items-start">
             <h4 class="font-bold text-slate-800 text-base">${r.name}</h4>
-            <button onclick="deleteRestaurant(${i})" title="刪除" class="p-1 text-slate-300 hover:text-rose-500"><i class="fa-solid fa-trash-can"></i></button>
+            <div class="flex items-center gap-2">
+              <button onclick="openEditModal(${i})" title="編輯餐廳與菜單" class="p-1 text-slate-400 hover:text-amber-500"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteRestaurant(${i})" title="刪除" class="p-1 text-slate-300 hover:text-rose-500"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
           </div>
           <div class="flex flex-wrap gap-1 mt-1.5">${(r.tags||[]).map(t => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md">#${t}</span>`).join('')}</div>
           ${r.phone ? `<p class="text-xs text-slate-500 mt-2">電話: ${r.phone}</p>` : ''}
@@ -305,7 +307,57 @@
       renderTags();
     }
 
-    function openAddModal() { clearModal(); renderModalTagOptions(); document.getElementById('modal').classList.remove('hidden'); }
+    function openAddModal() {
+      editingIndex = null;
+      document.getElementById('modal-title').innerText = "新增餐廳與菜單";
+      clearModal();
+      renderModalTagOptions();
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    async function openEditModal(i) {
+      editingIndex = i;
+      const target = restaurants[i];
+      document.getElementById('modal-title').innerText = "編輯餐廳與菜單";
+      document.getElementById('m-name').value = target.name;
+      document.getElementById('m-phone').value = target.phone || '';
+      document.getElementById('m-address').value = target.address || '';
+      document.getElementById('m-note').value = target.note || '';
+      modalSelectedTags = target.tags ? [...target.tags] : [];
+      renderModalTagOptions();
+
+      // 向雲端抓取既有菜單
+      const container = document.getElementById('menu-items-container');
+      container.innerHTML = '<p class="text-xs text-slate-400">載入菜單中...</p>';
+      
+      try {
+        const cbName = 'cb_m_' + Math.random().toString(36).substring(2);
+        const menuData = await fetchJSONP(`${SCRIPT_URL}?action=getMenu&restaurant=${encodeURIComponent(target.name)}`, cbName);
+        if (Array.isArray(menuData) && menuData.length > 0) {
+          container.innerHTML = menuData.map(m => `
+            <div class="flex gap-1.5 item-row">
+              <input type="text" value="${m.item}" placeholder="餐點名稱" class="flex-1 text-xs p-2 border rounded-lg item-name">
+              <input type="number" value="${m.price}" placeholder="金額" class="w-20 text-xs p-2 border rounded-lg item-price">
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `
+            <div class="flex gap-1.5 item-row">
+              <input type="text" placeholder="餐點名稱" class="flex-1 text-xs p-2 border rounded-lg item-name">
+              <input type="number" placeholder="金額" class="w-20 text-xs p-2 border rounded-lg item-price">
+            </div>`;
+        }
+      } catch (e) {
+        container.innerHTML = `
+          <div class="flex gap-1.5 item-row">
+            <input type="text" placeholder="餐點名稱" class="flex-1 text-xs p-2 border rounded-lg item-name">
+            <input type="number" placeholder="金額" class="w-20 text-xs p-2 border rounded-lg item-price">
+          </div>`;
+      }
+
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
     function clearModal() { 
       ['gmap-input','m-name','m-phone','m-address','m-note'].forEach(id => document.getElementById(id).value = ''); 
@@ -353,8 +405,12 @@
         }
       });
       
+      const isEditing = editingIndex !== null;
+      const oldName = isEditing ? restaurants[editingIndex].name : "";
+
       const obj = {
-        action: "addRestaurant",
+        action: isEditing ? "editRestaurant" : "addRestaurant",
+        oldName: oldName,
         name,
         phone: document.getElementById('m-phone').value.trim(),
         address: document.getElementById('m-address').value.trim(),
@@ -363,7 +419,12 @@
         menuItems
       };
 
-      restaurants.push(obj);
+      if (isEditing) {
+        restaurants[editingIndex] = { name: obj.name, phone: obj.phone, address: obj.address, tags: obj.tags, note: obj.note };
+      } else {
+        restaurants.push({ name: obj.name, phone: obj.phone, address: obj.address, tags: obj.tags, note: obj.note });
+      }
+
       localStorage.setItem('restaurants', JSON.stringify(restaurants));
       closeModal();
       renderMenu();
@@ -376,7 +437,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(obj)
         });
-        alert('成功新增店家！已同步寫入 Google 試算表。');
+        alert('儲存成功！資料已同步寫入 Google 試算表。');
       } catch (e) {}
     }
 
