@@ -182,7 +182,7 @@
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fvK4MB787LPhRS2cOat4S0lU8C_Z4fS58U7cM32oQk58sT0I2w60yH_/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbykFhGoaszH5fVk4MB787LPhRS2cOat4S5ix-d47-SYAotMYcgal4avXtJV_g58JKI/exec";
 
     const DEFAULT_CATEGORY_TAGS = ["台式小吃", "麵食/飯類", "日式料理", "美式/速食", "火鍋", "咖啡/甜點/飲料", "便當", "炸雞", "燒烤/居酒屋"];
     let restaurants = [];
@@ -206,21 +206,29 @@
       document.getElementById(`tab-${tab}`).classList.add('active-tab');
     }
 
-    function requestJSONP(url) {
+    function requestJSONP(url, timeoutMs = 12000) {
       return new Promise((resolve, reject) => {
         const cbName = 'cb_' + Math.random().toString(36).substring(2);
         const script = document.createElement('script');
         
+        const timer = setTimeout(() => {
+          delete window[cbName];
+          if (script.parentNode) document.body.removeChild(script);
+          reject(new Error("網路回應超時，請確認 Apps Script 部署版本與網址！"));
+        }, timeoutMs);
+
         window[cbName] = function(data) {
+          clearTimeout(timer);
           delete window[cbName];
           if (script.parentNode) document.body.removeChild(script);
           resolve(data);
         };
 
         script.onerror = function() {
+          clearTimeout(timer);
           delete window[cbName];
           if (script.parentNode) document.body.removeChild(script);
-          reject(new Error("網路回應超時"));
+          reject(new Error("無法連線至 Google 雲端，請確認 Apps Script 存取權限為所有人！"));
         };
 
         const delimiter = url.includes('?') ? '&' : '?';
@@ -239,6 +247,7 @@
           restaurants = cloudData;
         }
       } catch (e) {
+        console.warn("連線雲端失敗:", e.message);
       } finally {
         if (btnSync) btnSync.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>讀取雲端';
         renderMenu();
@@ -407,39 +416,41 @@
       btnSave.disabled = true;
       btnSave.innerText = "⏳ 儲存中...";
 
-      const isEditing = editingIndex !== null;
-      const oldName = isEditing ? restaurants[editingIndex].name : "";
+      try {
+        const isEditing = editingIndex !== null;
+        const oldName = isEditing ? restaurants[editingIndex].name : "";
 
-      // 1. 如果是編輯且改名，先刪除舊資料
-      if (isEditing) {
-        await requestJSONP(`${SCRIPT_URL}?action=deleteRestaurant&name=${encodeURIComponent(oldName)}`);
-      }
-
-      // 2. 寫入餐廳基本資料
-      const phone = document.getElementById('m-phone').value.trim();
-      const address = document.getElementById('m-address').value.trim();
-      const tagsStr = modalSelectedTags.join(',');
-      const note = document.getElementById('m-note').value.trim();
-
-      const addUrl = `${SCRIPT_URL}?action=addRestaurant&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&address=${encodeURIComponent(address)}&tags=${encodeURIComponent(tagsStr)}&note=${encodeURIComponent(note)}`;
-      await requestJSONP(addUrl);
-
-      // 3. 逐筆寫入菜單品項
-      const menuRows = document.querySelectorAll('.item-row');
-      for (let row of menuRows) {
-        const itemName = row.querySelector('.item-name').value.trim();
-        const itemPrice = row.querySelector('.item-price').value.trim();
-        if (itemName) {
-          const itemUrl = `${SCRIPT_URL}?action=addMenuItem&restaurant=${encodeURIComponent(name)}&item=${encodeURIComponent(itemName)}&price=${encodeURIComponent(itemPrice || "0")}`;
-          await requestJSONP(itemUrl);
+        if (isEditing) {
+          await requestJSONP(`${SCRIPT_URL}?action=deleteRestaurant&name=${encodeURIComponent(oldName)}`);
         }
-      }
 
-      alert('儲存成功！已成功寫入 Google 試算表。');
-      closeModal();
-      btnSave.disabled = false;
-      btnSave.innerText = "儲存並同步試算表";
-      syncCloudRestaurants();
+        const phone = document.getElementById('m-phone').value.trim();
+        const address = document.getElementById('m-address').value.trim();
+        const tagsStr = modalSelectedTags.join(',');
+        const note = document.getElementById('m-note').value.trim();
+
+        const addUrl = `${SCRIPT_URL}?action=addRestaurant&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}&address=${encodeURIComponent(address)}&tags=${encodeURIComponent(tagsStr)}&note=${encodeURIComponent(note)}`;
+        await requestJSONP(addUrl);
+
+        const menuRows = document.querySelectorAll('.item-row');
+        for (let row of menuRows) {
+          const itemName = row.querySelector('.item-name').value.trim();
+          const itemPrice = row.querySelector('.item-price').value.trim();
+          if (itemName) {
+            const itemUrl = `${SCRIPT_URL}?action=addMenuItem&restaurant=${encodeURIComponent(name)}&item=${encodeURIComponent(itemName)}&price=${encodeURIComponent(itemPrice || "0")}`;
+            await requestJSONP(itemUrl);
+          }
+        }
+
+        alert('儲存成功！已成功寫入 Google 試算表。');
+        closeModal();
+        syncCloudRestaurants();
+      } catch (e) {
+        alert('儲存失敗：' + e.message);
+      } finally {
+        btnSave.disabled = false;
+        btnSave.innerText = "儲存並同步試算表";
+      }
     }
 
     async function deleteRestaurant(i) {
