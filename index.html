@@ -704,10 +704,13 @@
 
     function copyLineSummary() {
       if (!currentOrders || currentOrders.length === 0) return alert('目前尚無點餐資料！');
-      
+      copyResSummaryText(currentRestaurant, currentOrders);
+    }
+
+    function copyResSummaryText(resName, ordersList) {
       let total = 0;
-      let text = `📢 【${currentRestaurant}】點餐統計明細：\n-------------------------\n`;
-      currentOrders.forEach(o => {
+      let text = `📢 【${resName}】點餐統計明細：\n-------------------------\n`;
+      ordersList.forEach(o => {
         const noteStr = o.note ? ` (${o.note})` : '';
         text += `• ${o.user}：${o.item}${noteStr} ($${o.price})\n`;
         total += Number(o.price || 0);
@@ -715,7 +718,7 @@
       text += `-------------------------\n💰 總金額：$${total} 元\n點餐完成！請再確認～`;
 
       navigator.clipboard.writeText(text).then(() => {
-        alert('已複製 LINE 點餐統計明細！可以直接貼到 LINE 群組發送。');
+        alert(`已複製「${resName}」的 LINE 點餐明細！可直接貼到 LINE 群組。`);
       }).catch(() => {
         prompt('請複製以下明細貼至 LINE：', text);
       });
@@ -789,9 +792,14 @@
               <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1">
                 <i class="fa-solid fa-store text-amber-500"></i>${res}
               </h4>
-              <span class="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                合計：$${resTotal} 元
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  $${resTotal} 元
+                </span>
+                <button onclick='copyGroupOrderSummary("${res}")' class="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded-lg font-bold shadow-sm flex items-center gap-1">
+                  <i class="fa-brands fa-line"></i>複製明細
+                </button>
+              </div>
             </div>
             <div class="space-y-1">
               ${itemsHtml}
@@ -801,6 +809,12 @@
       }
 
       container.innerHTML = html;
+    }
+
+    function copyGroupOrderSummary(resName) {
+      const items = allGroupOrders.filter(o => o.restaurant === resName);
+      if (!items || items.length === 0) return alert('找不到點餐資料');
+      copyResSummaryText(resName, items);
     }
   </script>
 </body>
