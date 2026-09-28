@@ -20,7 +20,7 @@
     <p class="text-xs text-slate-400 mt-1">跨手機 LINE 即時同步點餐算錢</p>
   </header>
 
-  <!-- 導覽頁籤（新增：開團紀錄） -->
+  <!-- 導覽頁籤 -->
   <nav class="flex justify-around bg-slate-200/60 p-1.5 rounded-2xl mb-5 text-xs text-slate-600 font-medium">
     <button id="tab-random" onclick="switchTab('random')" class="flex-1 py-2 text-center rounded-xl active-tab transition-all">
       <i class="fa-solid fa-dice block text-sm mb-0.5 text-amber-500"></i>亂數決策
@@ -117,7 +117,6 @@
           <input id="ord-price" type="number" placeholder="金額 *" class="w-24 text-xs p-2.5 border rounded-lg">
         </div>
         
-        <!-- 客製備註欄位 -->
         <div>
           <input id="ord-note" type="text" placeholder="備註/甜度冰量/辣度 (選填)" class="w-full text-xs p-2.5 border rounded-lg">
           <div class="flex flex-wrap gap-1 mt-1.5">
@@ -153,7 +152,7 @@
     <div id="restaurant-list" class="space-y-3"></div>
   </main>
 
-  <!-- Section 3: 【目前開團紀錄】(新頁面) -->
+  <!-- Section 3: 開團紀錄 -->
   <main id="sec-orders" class="hidden space-y-4">
     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 space-y-3">
       <div class="flex justify-between items-center border-b pb-2">
@@ -165,7 +164,6 @@
         </button>
       </div>
 
-      <!-- 餐廳篩選器 -->
       <div class="flex items-center gap-2">
         <label class="text-xs font-bold text-slate-500 whitespace-nowrap">篩選餐廳：</label>
         <select id="all-orders-filter" onchange="renderAllOrdersList()" class="flex-1 text-xs p-2 border rounded-xl bg-slate-50 focus:outline-none">
@@ -174,7 +172,6 @@
       </div>
     </div>
 
-    <!-- 所有點餐紀錄列表 -->
     <div id="all-orders-container" class="space-y-3">
       <p class="text-xs text-slate-400 text-center py-6">載入開團紀錄中...</p>
     </div>
@@ -724,7 +721,7 @@
       });
     }
 
-    /* ---------------- 【開團紀錄】新頁面核心邏輯 ---------------- */
+    /* ---------------- 【開團紀錄】頁面邏輯 ---------------- */
     async function loadAllGroupOrders() {
       const container = document.getElementById('all-orders-container');
       container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6"><i class="fa-solid fa-spinner fa-spin mr-1"></i>讀取雲端所有點餐資料中...</p>';
@@ -734,7 +731,6 @@
         if (Array.isArray(data)) {
           allGroupOrders = data;
           
-          // 更新下拉選擇選單
           const select = document.getElementById('all-orders-filter');
           const uniqueRes = [...new Set(data.map(d => d.restaurant))];
           select.innerHTML = '<option value="ALL">全部餐廳</option>' + uniqueRes.map(r => `<option value="${r}">${r}</option>`).join('');
@@ -760,7 +756,6 @@
         return;
       }
 
-      // 按餐廳分組
       const grouped = {};
       list.forEach(o => {
         if (!grouped[o.restaurant]) grouped[o.restaurant] = [];
