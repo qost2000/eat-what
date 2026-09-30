@@ -100,9 +100,15 @@
       <p id="res-address" class="text-xs text-slate-500 mt-0.5"></p>
       <p id="res-note" class="text-xs text-slate-400 mt-2 bg-slate-50 p-2 rounded-lg text-left whitespace-pre-line hidden"></p>
       
-      <button onclick="startGroupOrder(currentRestaurant)" class="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md">
-        <i class="fa-solid fa-cart-shopping"></i>大家一起線上同步點餐 (開團)
-      </button>
+      <!-- 功能按鈕列：直接鎖定 & 線上開團 -->
+      <div class="grid grid-cols-2 gap-2 mt-4">
+        <button id="btn-pin-result" onclick="togglePinCurrentResult()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-thumbtack text-amber-400"></i><span id="btn-pin-result-text">鎖定為開團餐廳</span>
+        </button>
+        <button onclick="startGroupOrder(currentRestaurant)" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md">
+          <i class="fa-solid fa-cart-shopping"></i>線上同步點餐
+        </button>
+      </div>
     </div>
 
     <!-- 點餐明細專區 -->
@@ -384,7 +390,7 @@
     function renderPinnedRestaurants() {
       const container = document.getElementById('pinned-restaurants-list');
       if (!pinnedRestaurants || pinnedRestaurants.length === 0) {
-        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">目前未鎖定餐廳，點擊右上角可設定！</p>';
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">目前未鎖定餐廳，點擊右上角或抽籤後可直接鎖定！</p>';
         return;
       }
 
@@ -400,12 +406,56 @@
               </div>
               <p class="text-[11px] text-slate-500 mt-0.5">${target.phone ? '📞 '+target.phone : ''} ${target.address ? '📍 '+target.address : ''}</p>
             </div>
-            <button onclick="startGroupOrder('${target.name}')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-sm whitespace-nowrap">
-              直接點餐 ➔
-            </button>
+            <div class="flex items-center gap-1.5">
+              <button onclick="unpinRestaurant('${target.name}')" title="取消鎖定" class="p-1.5 text-slate-300 hover:text-rose-500 text-xs">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+              <button onclick="startGroupOrder('${target.name}')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs px-3 py-2 rounded-xl shadow-sm whitespace-nowrap">
+                直接點餐 ➔
+              </button>
+            </div>
           </div>
         `;
       }).join('');
+    }
+
+    function unpinRestaurant(resName) {
+      pinnedRestaurants = pinnedRestaurants.filter(r => r !== resName);
+      localStorage.setItem('pinned_restaurants', JSON.stringify(pinnedRestaurants));
+      renderPinnedRestaurants();
+      updatePinResultButtonUI();
+    }
+
+    function togglePinCurrentResult() {
+      if (!currentRestaurant) return;
+
+      if (pinnedRestaurants.includes(currentRestaurant)) {
+        // 取消鎖定
+        unpinRestaurant(currentRestaurant);
+      } else {
+        // 新增鎖定
+        if (pinnedRestaurants.length >= 3) {
+          return alert('已達到 3 間鎖定上限！請先點擊上方專區的 ✕ 取消其中一間再鎖定。');
+        }
+        pinnedRestaurants.push(currentRestaurant);
+        localStorage.setItem('pinned_restaurants', JSON.stringify(pinnedRestaurants));
+        renderPinnedRestaurants();
+        updatePinResultButtonUI();
+      }
+    }
+
+    function updatePinResultButtonUI() {
+      const btnText = document.getElementById('btn-pin-result-text');
+      const btn = document.getElementById('btn-pin-result');
+      if (!btnText || !btn) return;
+
+      if (pinnedRestaurants.includes(currentRestaurant)) {
+        btnText.innerText = "已鎖定 (點擊解鎖)";
+        btn.className = "bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm";
+      } else {
+        btnText.innerText = "鎖定為開團餐廳";
+        btn.className = "bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm";
+      }
     }
 
     function openPinModal() {
@@ -443,8 +493,8 @@
       localStorage.setItem('pinned_date_str', pinnedDateStr);
 
       renderPinnedRestaurants();
+      updatePinResultButtonUI();
       closePinModal();
-      alert('已更新鎖定餐廳！');
     }
 
     /* ---------------- 第二頁：菜單型錄邏輯 ---------------- */
@@ -770,6 +820,7 @@
         noteElem.classList.add('hidden');
       }
 
+      updatePinResultButtonUI();
       document.getElementById('result-box').classList.remove('hidden');
       document.getElementById('order-section').classList.add('hidden');
     }
